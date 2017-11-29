@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html>
+<title>SNON &mdash; the Sensor Network Object Notation</title>
+
+<xmp theme="united" style="display:none;">
+## Introducing SNON
+
+SNON (Sensor Network Object Notation) is a lightweight sensor data representation for interchange and storage. It is easy for humans to read and write. It is easy for machines to parse and generate. It is highly compressible to reduce storage and network usage. SNON is based on the [JSON](http://json.org/), which is supported by most platforms and programming languages.
+
+SNON is sensor independent, and uses conventions familiar to programmers who have worked with common sensor platforms. It is self-describing and extensible, with  features only required when needed. These properties make SNON ideal for delivery of sensor data over [MQTT](http://mqtt.org/), summarization of sensor data, and efficient storage in NoSQL and columnar databases.
+
+## How is SNON Used?
+
+SNON sits at the presentation layer in the OSI protocol stack. A typical SNON deployment involves:
+
+* One or more sensors from which data is collected
+* One or more gateways, which manage one or more sensors
+* One or more aggregation points, which collect sensor data
+* One or more storage systems, which persist sensor data
+* One or more analytics engines, which process sensor data
+
+SNON defines the data format used to transfer sensor data between these entities.
+
+| SNON Data Flow        |           |
+| ------------- | ------------- |
+| ![SNON Data Flow](snon_flow.png)      | <br>SNON data starts out as physical values that are to be measured by sensors.<br><br>Each type of physical value has characteristics, such as the unit of measurement.<br><br>Sensors measure these physical values, and introduce additional characteristics.<br><br>Examples include the time of measurement, uncertainty of measurement, and location of measurement.<br><br>Sensor data is managed by gateways, which control data acquisition and transmission.<br><br>Sensor gateways collect the sensor data into SNON format in preparation for transmission.<br><br>An example of a transmission protocol well suited for SNON is MQTT.<br><br><br><br>SNON is designed to simplify real-time post-processing of sensor data.<br><br>Examples of post processing include quantization, summarization, filtering, and multi-sensor fusion.<br><br>Once processed, the resulting derived values can again be represented in SNON, and forwarded on to later processing elements.<br><br><br><br>When sensor data is aggregated and consolidated, it is simple to store in NoSQL and columnar databases.<br><br>SNON data has unique identifiers for sensor values and sources, which facilitate query.<br><br>Finally, since SNON data is self-describing, query and user interfaces can be dynamically generated.<br><br><br>Thus, by using a standard sensor data representation, complexity is reduced and systems are quicker to develop. |
+
+## The SNON Representation
+
+SNON defines the data interchanged between entities within a sensor network.
+
+Each SNON message contains the following JSON data:
+
+| Field Name<br>(Short Name)    | Data Type     | Description   | Mandatory |
+| ------------- | ------------- | ------------- | --------- |
+| messageID<br>(msID)     | JSON String   | Globally unique identifier of the SNON message.<br><br>Uniquely identifies the message, allowing identification of duplicates.<br><br>Each globally unique identifier shall be no longer than 64 unicode characters in UTF-8 format (128 bytes). | Mandatory |
+| messageTime<br>(msT)    | JSON String   | Message creation time in ISO 8601 extended representation date/time format. | Optional |
+| precedentID<br>(pID)   | JSON String   | Globally unique identifier of a preceding SNON message.<br><br>Indicates that the message inherits fields from another SNON message.<br><br>SNON messages with a precedentID do not need to repeat information that has not changed. If an omitted optional field is present in the precedent message, the field from the precedent is inherited, and treated as if it were directly included in the message. | Optional |
+| sensorID<br>(sID)       | JSON String   | Globally unique identifier of the sensor. | Mandatory unless a precedentID is present. |
+| sensorName<br>(sN)     | JSON String   | Descriptive name of the sensor. | Optional |
+| sensorType<br>(sT)     | JSON String   | Description of the type of the sensor. | Optional |
+| sensorLocation<br>(sL) | JSON String   | Description of the location of the sensor. | Optional |
+| sensorHierarchy<br>(sH) | JSON String   | String representing the sensor position in a hierarchy, using "/" as a separator. | Optional |
+| measureType<br>(meT) | JSON String   | Data representation of the sensor value.<br><br>The following types are defined:<br><br>"enumeration" &ndash; The sensor value shall contain a string representation of an integer specified in valueRange.<br>"numeric" &ndash; The sensor value shall contain a string representation of a number.<br>"string" &ndash; The sensor value shall consist of a string value.<br>"url" &ndash; The sensor value shall contain a string representation of a URL (including data URIs). | Mandatory unless a precedentID is present. |
+| measureAcquire<br>(meA) | JSON String   | Measurement technique used to acquire the sensor value.<br><br>The following types are defined:<br><BR>"sample" &ndash; The value represents a measurement captured at the start of valueTime.<br>"count" &ndash; The value represents an measured, increasing value, captured the start of valueTime.<br>"triggered" &ndash; The value represents a measurement, captured at the end of valueTime.<br>"summary" &ndash; the value represents a summarization of measurements that occurred during the valueTime.<br>"derived" &ndash; The value represents calculations of measurements that occurred during the valueTime. | Mandatory unless a precedentID is present. |
+| measureLabel<br>(meL) | JSON String<br><br>or<br><br>JSON Array of JSON Objects | Value labels for sensor values.<br><br>For numeric, string and url type sensors, the JSON String contains a human-readable description of the value.<br><br>For enumeration type sensors, the JSON object contains an array of JSON objects, each contains two JSON strings: a "value" string and a "label" string. If the value equals the "value" string, the "label" string shall be used in place of the value.<br><br>For example, the JSON "measureLabel": [{"value": "0","label": "Off"},{"value": "1","label": "On"}] would indicate that the value "0" should be rendered as "Off", and the value "1" should be rendered as "On". | Optional |
+| measureUnit<br>(meU) | JSON String   | When possible, the [SI base unit name](http://www.bipm.org/en/si/si_brochure/) of unit of measure (without a prefix) shall be specified.<br><br>If omitted, the value shall considered to be unit-less. | Optional |
+| value<br>(v) | JSON Array of JSON Strings | One or more values measured from the sensor.<br><br>All value array fields shall have the same number of entries, with the order consistent across fields.<br><br>If a min and max are provided, the value represents the average value over the acquisition period specified in the valueTime field. | Mandatory |
+| valueMax<br>(vMax) | JSON Array of JSON Strings | The minimum value of the sensor during the valueTime. | Optional |
+| valueMin<br>(vMin) | JSON Array of JSON Strings | The minimum value of the sensor during the valueTime. | Optional |
+| valueUncertainty<br>vU | JSON Array of JSON Strings | The uncertainty of the measurement, as an unsigned numeric value representing the +/- error value.<br><br>If omitted, there is no declared uncertainty. | Optional |
+| valueTime<br>(vT) | JSON Array of JSON Strings | Time associated with each value, in ISO 8601 start/end time interval format.<br><br>If the time interval represents a point in time, an ISO 8601 extended representation date/time format may be used instead of an interval, and shall be considered equivalent to an interval where the start and end times are the same.<br><br>If the sensor value contains multiple values, each array entry shall contain a corresponding ISO 8601 interval. | Mandatory |
+| valueTimeout<br>(vTo) | JSON Array of JSON Strings | Timeout associated with each value, in microseconds.<br><br>If the specified time duration since the valueTime has elapsed, the corresponding value is no longer accurate. | Optional |
+| valueSequence<br>(vSq) | JSON Array of JSON Strings | The sequence count associated with each sensor value.<br><br>If the sensor record represents a single value, the array shall contain a single monotonically increasing positive integer.<br><br>If the sensor record represents a min/max/average value, the array shall contain a single value representing the lowest and highest sequence values in the form of "n&ndash;m", where n&lt;m.<br><br>If the sensor record represents multiple values, the array shall continue a unique monotonically increasing positive integer for each value. | Optional |
+| valueSession<br>(vSq) | JSON Array of JSON Strings | The session count associated with the sensor values.<br><br>Each time the sequence count is reset, the session must change to a higher value. | Optional |
+| valueHealth<br>(vH) | JSON Array of JSON Strings | This field contains the health of the sensor.<br><br>The following values are defined:<br><br>"Good" &ndash; The sensor is unaware of any issues and is actively reporting data.<br>"Bad" &ndash; The sensor is aware of an issue, but is still reporting data.<br>"Unreachable" &ndash; The sensor cannot be reached.<br>"Not Installed" &ndash; The sensor does not exist or is unknown.<br><br>If the device is unreachable, or has not reported in within an expected MeasureFrequency, the sensorHealth is considered Unreachable.<br><br>If the sensor health is not "Good", the value, valueMax and valueMin, if present, may contain empty strings (""). | Optional |
+| valueError<br>(vE) | JSON Array of JSON Strings | This field contains error messages specific to the value of a sensor.<br><br>When multiple values are included in the array, an empty string indicates that the previous error string shall be used. | Optional |
+| valueLocation<br>(vL) | JSON Array of JSON Strings | GPS Earth Centered, Earth Fixed (ECEF) formatted "x,y,z" location of the sensor at the time the sensor value was collected.<br><br>When multiple values are included in the array, an empty string indicates that the previous location string shall be used. | Optional |
+| valueLocationAngle<br>(vLA) | JSON Array of JSON Strings | &phi; and &lambda; angles, in degrees, formatted "&phi;,&lambda;", between the valueLocationParent coordinate system and the local coordinate system.<br><br>valueLocationAngle shall only be present when both valueLocation and valueLocationParent are present.<br><br>When multiple values are included in the array, an empty string indicates that the previous location string shall be used. | Optional |
+| valueLocationParent<br>(vLP) | JSON String | GUID of an SNON message providing relative location information.<br><br>If valueLocation is not present and valueLocationAngle is not present, the location specified in the valueLocationParent message shall be used.<br><br>If the valueLocation is present and valueLocationAngle is not present, the location specified in the valueLocationParent message, offset by the valueLocation values, shall be used.<br><br>If the valueLocation and valueLocationAngle are present, the location specified in the valueLocationParent message, offset by the valueLocation values translated by the valueLocationAngle values, shall be used. | Optional |
+| timeSource<br>(tS)     | JSON String   | Sensor ID of the time source used by the sensor or gateway. | Optional |
+| timeUncertanty<br>(tU) | JSON String   | Time uncertainty in microseconds.<br><br>When present, all time values in the message shall be considered to have a +/- time uncertainty as specified. | Optional |
+
+## SNON Examples
+
+Example 1: A value from a temperature sensor:
+
+    {
+        "messageID": "F3461B2D-133F-4F40-AA0E-A1109F6FB8B2",
+        "sensorID": "9A6D9328-C504-47D8-990A-6635D6268B49",
+        "sensorName": "Temperature",
+        "measureType" : "numeric",
+        "measureAcquire" : "sample",
+        "measureUnit" : "degree Celsius",
+        "value" : ["29.3"],
+        "valueTime" : ["2014-08-20T14:32:56.125Z"]
+    }
+
+Example 2: A second value from the same temperature sensor:
+
+    {
+        "messageID": "8F2DE720-F3E2-4B35-88F8-63A1B2D312B7",
+        "precedentID": "F3461B2D-133F-4F40-AA0E-A1109F6FB8B2",
+        "value" : ["28.8"],
+        "valueTime" : ["2014-08-20T14:32:57.126Z"]
+    }
+
+This message refers back to the message in example 1, allowing a more compact representation by omitting fields that have not changed.
+
+Example 3: Compact form of Example 2:
+
+    {"msID":"8F2DE720-F3E2-4B35-88F8-63A1B2D312B7","pID":"F3461B2D-133F-4F40-AA0E-A1109F6FB8B2","v":["28.8"],"vt":["2014-08-20T14:32:57.126Z"]}
+
+Example 4: A summary of a minute's worth of values from a temperature sensor:
+
+    {
+        "messageID": "2DC24B21-D37F-4282-BF60-F938274A7681",
+        "sensorID": "9A6D9328-C504-47D8-990A-6635D6268B49",
+        "sensorName": "Temperature",
+        "measureType" : "numeric",
+        "measureAcquire" : "summary",
+        "measureUnit" : "degree Celsius",
+        "value" : ["28.0"],
+        "valueMax" : ["29.1"],
+        "valueMin" : ["27.5"],
+        "valueTime" : ["2014-08-20T14:33Z-2014-08-20T14:34Z"]
+    }
+
+Example 5: A GPS sensor in an automobile:
+
+    {
+        "messageID": "9B89268D-9AEF-4EDD-A67B-7C8A01114270",
+        "sensorID": "49A0FD35-4913-4E83-BB07-7630E91B2CD6",
+        "sensorName": "GPS Location",
+        "measureType" : "enumeration",
+        "measureAcquire" : "sample",
+        "measureLabel" : [{"value":"0", "label":"Unlocked"}, {"value":"1", "label":"Locked"}],
+        "value" : ["1"],
+        "valuelocation" : ["4200.672,173.667,4780.3"],
+        "valueTime" : ["2014-08-20T14:32:57.126Z"]
+    }
+
+Example 6: A heading sensor on the rear-view mirror of an automobile:
+
+    {
+        "messageID": "FB59762B-FB1A-408F-A17E-F219AAB7C27A",
+        "sensorID": "BCEC6AC5-BB4B-44C4-8BF8-A414E5BDD096",
+        "sensorName": "RVM-Heading",
+        "measureType" : "numeric",
+        "measureAcquire" : "sample",
+        "measureUnit" : "radian",
+        "value" : ["48.4"],
+        "valuelocation" : ["0.453,0.240,0.012"],
+        "valuelocationAngle" : ["46.21,10.22"],
+        "valuelocationParent" : "9B89268D-9AEF-4EDD-A67B-7C8A01114270",
+        "valueTime" : ["2014-08-20T14:32:57.126Z"]
+    }
+
+The location of the sensor is fixed relative to the location of the car.
+
+## SNON and MQTT
+
+Connecting to a MQTT broker:
+
+* Each time a SNON sensor connects to a MQTT broker, the first SNON message sent shall be a sensor description message, with all value fields omitted, with a topic of "snon/announce". This permits discovery of SNON messages.
+* Each time a SNON sensor reconnects to a MQTT broker, for each defined sensor, the value of the valueSession shall be increased.
+
+Publishing SNON messages:
+
+* When an SNON message is published via MQTT, the topic of "snon/sensorID" shall be used, where sensorID is replaced with the sensorID value of the SNON message. This allows interested parties to subscribe to each individual SNON message.
+* The first non-announce SNON message published shall not include a precedentID.
+* When SNON messages are sent with a precedentID, it is recommended that a SNON message without precedentID be periodically be sent to allow clients to being processing the sensor message stream.
+
+## SNON Security
+
+Sensor data often must be encrypted to protect confidentiality, and signed to protect integrity and demonstrate the authenticity of the source of the data. SNON uses JSON Object Signing and Encryption (JOSE) as described in [RFC 7516](https://tools.ietf.org/html/rfc7516) and [RFC 7515](https://tools.ietf.org/html/rfc7515). Each SNON message is used as the plaintext.
+
+Example from [RFC 7520](https://tools.ietf.org/html/rfc7520#section-5.6) of what an AES-GCM encrypted SNON message looks like using JWE:
+
+    {
+        "protected": "eyJhbGciOiJkaXIiLCJraWQiOiI3N2M3ZTJiOC02ZTEzLT
+            Q1Y2YtODY3Mi02MTdiNWI0NTI0M2EiLCJlbmMiOiJBMTI4R0NNIn0",
+        "iv": "refa467QzzKx6QAB",
+        "ciphertext": "JW_i_f52hww_ELQPGaYyeAB6HYGcR559l9TYnSovc23XJ
+            oBcW29rHP8yZOZG7YhLpT1bjFuvZPjQS-m0IFtVcXkZXdH_lr_FrdYt9
+            HRUYkshtrMmIUAyGmUnd9zMDB2n0cRDIHAzFVeJUDxkUwVAE7_YGRPdc
+            qMyiBoCO-FBdE-Nceb4h3-FtBP-c_BIwCPTjb9o0SbdcdREEMJMyZBH8
+            ySWMVi1gPD9yxi-aQpGbSv_F9N4IZAxscj5g-NJsUPbjk29-s7LJAGb1
+            5wEBtXphVCgyy53CoIKLHHeJHXex45Uz9aKZSRSInZI-wjsY0yu3cT4_
+            aQ3i1o-tiE-F8Ios61EKgyIQ4CWao8PFMj8TTnp",
+        "tag": "vbb32Xvllea2OtmHAdccRQ"
+    }
+
+Example from [RFC 7520](https://tools.ietf.org/html/rfc7520#section-4.4) of what an HMAC-SHA2 signed SNON message looks like using JWS:
+
+    {
+        "payload": "SXTigJlzIGEgZGFuZ2Vyb3VzIGJ1c2luZXNzLCBGcm9kbywg
+            Z29pbmcgb3V0IHlvdXIgZG9vci4gWW91IHN0ZXAgb250byB0aGUgcm9h
+            ZCwgYW5kIGlmIHlvdSBkb24ndCBrZWVwIHlvdXIgZmVldCwgdGhlcmXi
+            gJlzIG5vIGtub3dpbmcgd2hlcmUgeW91IG1pZ2h0IGJlIHN3ZXB0IG9m
+            ZiB0by4",
+        "protected": "eyJhbGciOiJIUzI1NiIsImtpZCI6IjAxOGMwYWU1LTRkOW
+            ItNDcxYi1iZmQ2LWVlZjMxNGJjNzAzNyJ9",
+        "signature": "s0h6KThzkfBBBkLspW1h84VsJZFTsPPqMDA7g1Md7p0"
+    }
+
+Nesting of signatures and encryption is defined in section 6 of [RFC 7520](https://tools.ietf.org/html/rfc7520#section-6).
+
+Since Sensor IDs are used as MQTT topic names, it is strongly recommended that these be opaque (or hashes) to ensure that information is not leaked. This is why hierachical topic names are not used, as this will leak relationship data between sensors.
+
+## SNON Changelog
+
+SNON 0.3 2015-08-04 &ndash; Public second revision.
+
+* Added additional detail on how to use SNON with MQTT
+* Retired messageHash and messageSignature in favor of [JOSE](https://tools.ietf.org/html/rfc7520)
+* Addition of field short names for low-resource platforms
+* Additional examples added
+
+SNON 0.2 2015-07-05
+
+* Addition of valueTimeout and valueSequence fields
+* Clarification of measureUnit and measureLabel fields
+
+SNON 0.1 2014-09-24 &ndash; Initial publication.
+
+Please send comments and suggestions to <snon@snon.org>
+
+</xmp>
+
+<script src="http://strapdownjs.com/v/0.2/strapdown.js"></script>
+</html>
