@@ -16,4 +16,4 @@ Read the full spec at http://www.snon.org/
 [github]: https://github.com/dslik/snon-spec
 
 [license-img]: http://img.shields.io/badge/license-BSD-a0a060.svg?style=flat-square
-[github-img]: http://img.shields.io/badge/github-dslik/snon-spec-a0a060.svg?style=flat-square
+[github-img]: https://img.shields.io/badge/github-dslik%2Fsnon--spec-a0a060.svg?style=flat-square
