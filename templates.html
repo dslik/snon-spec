@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html>
+<title>SNON 2.0 &mdash; The Sensor Network Object Notation</title>
+<meta charset="utf-8">
+<xmp theme="united" style="display:none;">
+## SNON Templates
+
+SNON templates are collections of SNON definitions that are packaged up for distribution to SNON systems. Once loaded into an SNON system, instances of devices described by the template can be instantiated.
+
+For example, a simple device with two sensors, temperature and humidity, could have an SNON template as shown below in Example 1.1:
+
+    Example 1.1:
+
+    [
+      {
+        "messageID": "urn:uuid:1f60d164-dc60-4cd0-a152-e192072adfb9",
+        "messageTime": "2018-04-18T13:43:19.983Z",
+        "message": {
+          "entityType": { "*": "Temperature" },
+          "measureUnit": "°C",
+          "measureType": "numeric",
+          "measureAcquire": "sample",
+          "measureDisplayUnit": { "*": "Celsius" }
+        }
+      },
+      {
+        "messageID": "urn:uuid:eb459e51-cb34-44a4-98e9-d83575ce8e2e",
+        "messageTime": "2018-04-18T13:43:19.983Z",
+        "message": {
+          "entityType": { "*": "Humidity" },
+          "measureUnit": "%",
+          "measureType": "numeric",
+          "measureAcquire": "sample",
+          "measureDisplayLow": "0",
+          "measureDisplayHigh": "100",
+          "measureDisplayUnit": { "*": "Percent RH" }
+        }
+      },
+      {
+        "messageID": "urn:uuid:2bf4c131-ee7b-4b4f-ba09-0ccdc5bff3a7",
+        "messageTime": "2018-04-18T13:43:19.983Z",
+        "message": {
+          "entityID": "urn:uuid:8f3011df-3f36-47b1-9a1d-366be5404197",
+          "entityClass": "device-template",
+          "entityName": { "*": "ACME Temperature Sensor" },
+          "extensions": {
+            "tcpip": {
+              "ipprot" : "modbus",
+              "ipaddr" : "127.0.0.1",
+              "ipmask" : "255.255.255.0",
+              "ipgw" : "127.0.0.1",
+              "ipport" : "6000"
+            }
+          }
+        }
+      },
+      {
+        "messageID": "urn:uuid:72ada238-7a94-4c20-940f-6e41da629e98",
+        "messageTime": "2018-04-18T13:43:19.983Z",
+        "message": {
+          "precedentID": "urn:uuid:1f60d164-dc60-4cd0-a152-e192072adfb9",
+          "entityID": "urn:uuid:254dee83-813b-4ff2-870f-b9d608d7bb87",
+          "entityClass": "sensor-template",
+          "entityName": { "*": "Temperature" },
+          "entityRelations": { "child_of": [ "urn:uuid:8f3011df-3f36-47b1-9a1d-366be5404197" ] },
+          "extensions": {
+            "modbus": {
+              "unitID" : "1",
+              "address" : "30001",
+              "format" : "FIX2"
+            }
+          }
+        }
+      },
+      {
+        "messageID": "urn:uuid:e590e99c-c0b5-490d-a82a-5a01dd6d8977",
+        "messageTime": "2018-04-18T13:43:19.983Z",
+        "message": {
+          "precedentID": "urn:uuid:eec14169-6887-479f-99d1-105207a1ca15",
+          "entityID": "urn:uuid:3e93d878-aeec-4be4-8e50-e8e6f261110d",
+          "entityClass": "sensor-template",
+          "entityName": { "*": "Humidity" },
+          "entityRelations": { "child_of": [ "urn:uuid:8f3011df-3f36-47b1-9a1d-366be5404197" ] },
+          "extensions": {
+            "modbus": {
+              "unitID" : "1",
+              "address" : "30002",
+              "format" : "FIX1"
+            }
+          }
+        }
+      }
+    ]
+
+In this example, the first two SNON messages define the measurement types used by the template, the third SNON message defines the device, and the forth and fifth SNON messages define two sensors that are part of the device.
+
+The relationship between the parts of the template is shown below in Figure 1.1:
+
+<center>
+![SNON Template](images/snon_template.png)
+<br>
+Figure 1 - SNON Template Structure
+<br><br></center>
+
+## Instantiating SNON Templates
+
+To instantiate an instance of the device described by the instance, the following process is followed:
+
+1. New device SNON fragments are created for each corresponding device-template fragment
+2. New sensor SNON fragments are created for each corresponding sensor-template fragment
+3. New IDs are allocated for each messageID and entityID
+4. precedentID fields are added or updated to point to the corresponding template fragment entityID
+5. entityRelations fields are updated to point to the newly allocated IDs
+6. Inherited fields are removed
+7. Instantiation-specific fields are added
+
+Example 1.2 shows an example of an instantiated device, named "My Temperature Sensor":
+
+    Example 1.2:
+
+    [
+      {
+        "messageID": "urn:uuid:b69326ff-cb88-4de5-8e61-a383966fc279",
+        "messageTime": "2018-04-20T13:43:19.983Z",
+        "message": {
+          "precedentID": "urn:uuid:8f3011df-3f36-47b1-9a1d-366be5404197",
+          "entityID": "urn:uuid:362df750-32e0-4e5e-9481-256eae61af28",
+          "entityClass": "device",
+          "entityName": { "*": "My Temperature Sensor" },
+          "extensions": {
+            "tcpip": {
+              "ipprot" : "modbus",
+              "ipaddr" : "192.168.0.1",
+              "ipmask" : "255.255.255.0",
+              "ipgw" : "192.168.0.254",
+              "ipport" : "6000"
+            }
+          }
+        }
+      },
+      {
+        "messageID": "urn:uuid:c1a21675-abf0-49b1-a5b7-11cdfc629a50",
+        "messageTime": "2018-04-20T13:43:19.983Z",
+        "message": {
+          "precedentID": "urn:uuid:254dee83-813b-4ff2-870f-b9d608d7bb87",
+          "entityID": "urn:uuid:59db5624-e54f-43ad-91f4-b95ae2dea2c5",
+          "entityClass": "sensor",
+          "entityRelations": { "child_of": [ "urn:uuid:362df750-32e0-4e5e-9481-256eae61af28" ] }
+        }
+      },
+      {
+        "messageID": "urn:uuid:e7af84e8-b3cf-4be3-be5a-666f959103df",
+        "messageTime": "2018-04-20T13:43:19.983Z",
+        "message": {
+          "precedentID": "urn:uuid:3e93d878-aeec-4be4-8e50-e8e6f261110d",
+          "entityID": "urn:uuid:f1917e29-ea3f-4aab-b7d4-a1645d69ab8f",
+          "entityClass": "sensor",
+          "entityRelations": { "child_of": [ "urn:uuid:362df750-32e0-4e5e-9481-256eae61af28" ] }
+        }
+      }
+    ]
+
+Inheritance relationships between instantiated devices and template devices are shown below in Figure 1.2:
+
+<center>
+![SNON Template Inheritance](images/snon_template_inherit.png)
+<br>
+Figure 1.2 - SNON Template Inheritance
+<br><br></center>
+
+SNON templates can be updated over time, with updates reflected in all instantiated devices and sensors. By loading in an updated template, the newer fragments with the corresponding entityID are inherited from, instead of the older fragments.
+
+Additions and/or removals of sensors or devices to a template are more complicated, and requires enumerating all devices that inherit from the template, then performing a corresponding addition or removal operation.
+
+If inheritance from a template is not desired, all fields can be copied over, and precedentIDs are not added or changed.
+
+</xmp>
+
+<script src="http://strapdownjs.com/v/0.2/strapdown.js"></script>
+</html>
+
