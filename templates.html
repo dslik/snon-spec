@@ -168,11 +168,7 @@ Inheritance relationships between instantiated devices and template devices are 
 Figure 1.2 - SNON Template Inheritance
 <br><br></center>
 
-SNON templates can be updated over time, with updates reflected in all instantiated devices and sensors. By loading in an updated template, the newer fragments with the corresponding entityID are inherited from, instead of the older fragments.
-
-Additions and/or removals of sensors or devices to a template are more complicated, and requires enumerating all devices that inherit from the template, then performing a corresponding addition or removal operation.
-
-If inheritance from a template is not desired, all fields can be copied over, and precedentIDs are not added or changed.
+SNON templates can be updated over time, with both the original and updated SNON messages typically being retained. Updating the template does not update instantiated devices and sensors, since references are via precedentID (to specific messageIDs). This means that updating existing instantiated devices to use the new template requires each instantiated device and sensor to be explicitly updated with new precedentIDs.
 
 </xmp>
 
