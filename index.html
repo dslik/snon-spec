@@ -1,163 +1,116 @@
 <!DOCTYPE html>
 <html>
-<title>SNON 2.0 &mdash; The Sensor Network Object Notation</title>
+<title>SNON 2.1 &mdash; The Sensor Network Object Notation</title>
 <meta charset="utf-8">
 <xmp theme="united" style="display:none;">
+![](logos/snon_small.png)
+
 ## 1. Introducing SNON
 
-SNON 2.0 is the second generation of the Sensor Network Object Notation, a lightweight sensor data representation for interchange and storage. It is easy for humans to read and write. It is easy for machines to parse and generate. It is highly compressible to reduce storage and network usage. SNON is based on [JSON](http://json.org/), which is widely supported by most platforms and programming languages.
+SNON 2 is the second generation of the Sensor Network Object Notation (SNON), a lightweight sensor data representation for interchange and storage.
 
-SNON is sensor independent, and uses conventions familiar to programmers who have worked with common sensor platforms. It is self-describing and extensible, with features only required when needed. These properties make SNON ideal for delivery of sensor data over lightweight message protocols such as [MQTT](http://mqtt.org/), summarization and aggregation of sensor data, and efficient storage in key/value and columnar time-series databases.
+Why use SNON?
 
-## 1.1 Why SNON?
+* SNON is easy for humans to read and write
+* SNON is easy for machines to parse and generate
+* SNON is highly compressible to reduce storage and network usage
+* SNON is based on [JSON](http://json.org/), which is widely supported by most platforms and programming languages
+* SNON is sensor independent, and uses conventions familiar to programmers who have worked with common sensor platforms
+* SNON is self-describing and extensible, with features only required when needed
+* SNON makes sensor interoperabilty and "plug and play" easy
 
-SNON provides a simple yet powerful way to describe, aggregate, transfer, and relate sensor data. Security and internationalization is designed-in from the ground up.
+These properties make SNON ideal for:
 
-Here are some of the ways that SNON is used:
+* Discovery and lifecycle management of sensors and sensor topologies
+* Encapsulation of sensor data for eventing systems such as [CloudEvents](https://github.com/cloudevents/spec/blob/v0.3/primer.md)
+* Delivery of sensor data over lightweight message protocols such as [MQTT](http://mqtt.org/)
+* Summarization and aggregation of sensor data
+* Efficient storage in key/value and columnar time-series databases
 
-### 1.1.1 Sensor Value Streaming
+## 1.1 What does SNON look like?
 
-SNON provides a standardized representation for describing sensor measurements.
+Here are some examples of SNON in action:
 
-The following example shows temperature measurements taken by a temperature sensor:
-
-    Example 1.1
-
-    [
-        {"eID":"urn:uuid:cd9f930e-a3b4-423a-850b-3c81135f0f7e","v":["28.15"],"vT":["2014-08-20T14:32:57.126Z"]},
-        ...
-        {"eID":"urn:uuid:cd9f930e-a3b4-423a-850b-3c81135f0f7e","v":["23.53"],"vT":["2014-08-20T15:30:23.524Z"]}
-    ]
-
-SNON fragments (the JSON object in the above array) can be sent over stream-based protocols, such as TCP/IP, HTTP long-polling, or Websockets. SNON collections (the JSON array and all contents) can be sent over message-based protocols, such as UDP, MQTT or various RT transports.
-
-### 1.1.2 Sensor Value Bulk Transfer
-
-SNON provides a standardized representation for batch transfer of sensor measurements, allowing efficient handling of bulk transport, synchronization and intermittent connectivity. Values can be aggregated spatially and temporally.
-
-The following example shows a collection of ten temperature measurements:
-
-    Example 1.2
+    Example 1.1 - A single temperature value
 
     [
         {
             "eID":"urn:uuid:cd9f930e-a3b4-423a-850b-3c81135f0f7e",
-            "v":["28.15","28.14","28.15","28.15","28.14","28.14","28.13","28.13","28.12","28.11"],
-            "vT":["2014-08-20T14:32:57.126Z","/PT10S","/PT20S","/PT30S","/PT40S","/PT50S","/PT60S","/PT70S","/PT80S","/PT90S"]
+            "v":["28.15"],
+            "vT":["2014-08-20T14:32:57.126Z"]
         }
     ]
 
-The following example shows a collection of two different sensor values:
+SNON provides a standardized representation for describing values measured by sensors. In this example, the "eID" field indicates the identity of the sensor (the entity ID), the "v" field indicates the value, and the "vT" field indicates the time for the value.
 
-    Example 1.3
-
-    [
-        {"eID":"urn:uuid:01ee0ac6-1dbc-4af0-8e20-f9b3e6a9082c","v":["-113.4"],"vT":["2014-08-20T15:30:23.524Z"]},
-        {"eID":"urn:uuid:cd9f930e-a3b4-423a-850b-3c81135f0f7e","v":["23.53"],"vT":["2014-08-20T15:30:23.524Z"]}
-    ]
-
-### 1.1.3 Sensor Description and Discovery
-
-SNON provides a standardized representation for describing entities, such as sensors, devices and locations. A entity catalog can use SNON to enable discovery of sensors that match certain criteria, including sensor type, characteristics, and relationships with other entities.
-
-The following example shows the definition for a simple temperature sensor:
-
-    Example 1.4
+    Example 1.2 - A definition for a temperature sensor
 
     [
         {
             "entityID": "urn:uuid:cd9f930e-a3b4-423a-850b-3c81135f0f7e",
             "entityType": "sensor",
-            "entityName": {
-                "jp": "冷却水の温度",
-                "*": "Cooling Water Temperature"
-            },
+            "entityName": { "jp": "冷却水の温度",  "*": "Cooling Water Temperature" },
             "measureUnit": "°C",
-            "measureDisplayUnit": {
-                "en-us": "°F",
-                "*": "°C"
-            },
-            "measureUnitPrefix": {
-                "jp": "摂氏"
-            },
-            "measureUnitSuffix": {
-                "jp": "度",
-                "en-us": " ℉",
-                "*": " ℃"
-            },
-            "measureUnitSuffixEx": {
-                "en-us": " degrees Fahrenheit",
-                "*": " degrees Celsius"
-            }
+            "measureType": "numeric",
+            "measureAcquire": "sample",
+            "measureDisplayUnit": { "en-us": "°F", "*": "°C" },
+            "measureUnitPrefix": { "jp": "摂氏" },
+            "measureUnitSuffix": { "jp": "度", "en-us": " ℉", "*": " ℃" },
+            "measureUnitSuffixEx": { "en-us": " degrees Fahrenheit", "*": " degrees Celsius" }
         }
     ]
 
-To allow common parts of sensor definitions to be used across many sensors, a sensor can inherit these fields from "template" sensor messages:
+Sensor data needs context to be meaningful. SNON provides a standardized representation for describing entities, such as sensors, devices and locations. A entity catalog can use SNON to enable discovery of sensors that match certain criteria, including sensor type, characteristics, and relationships with other entities.
 
-    Example 1.5
+    Example 1.3 - CloudEvents encapsulation
 
-    [
-        {
-            "messageID": "urn:uuid:f4dfec0c-259b-4f1b-9eba-9070a4d64b7b",
-            "messageTime": "2014-08-20T14:32:56.125Z",
-            "message": {
-                "measureUnit": "°C",
-                "measureDisplayUnit": {
-                    "en-us": "°F",
-                    "*": "°C"
-                },
-                "measureUnitPrefix": {
-                    "jp": "摂氏"
-                },
-                "measureUnitSuffix": {
-                    "jp": "度",
-                    "en-us": " ℉",
-                    "*": " ℃"
-                },
-                "measureUnitSuffixEx": {
-                    "en-us": " degrees Fahrenheit",
-                    "*": " degrees Celsius"
-                }
-            }
-        },
-        {
-            "messageID": "urn:uuid:34f8e1f8-535e-4abb-a512-72bfd880b4ca",
-            "messageTime": "2014-08-20T14:32:56.532Z",
-            "message": {
-                "precedentID": "urn:uuid:f4dfec0c-259b-4f1b-9eba-9070a4d64b7b",
-                "entityID": "urn:uuid:cd9f930e-a3b4-423a-850b-3c81135f0f7e",
-                "entityType": "sensor",
-                "entityName": {
-                    "jp": "冷却水の温度",
-                    "*": "Cooling Water Temperature"
-                }
-            }
+    {
+        "specversion": "0.3",
+        "type": "org.snon.v2",
+        "schemaurl": "http://www.snon.org/v2/snon-schema.json",
+        "source": "urn:uuid:407ec909-2519-4a2a-980b-ee75a47020ad",
+        "id": "urn:uuid:f4dfec0c-259b-4f1b-9eba-9070a4d64b7b",
+        "time": "2014-08-20T14:34:56.125Z",
+        "data" : {
+            "eID":"urn:uuid:cd9f930e-a3b4-423a-850b-3c81135f0f7e",
+            "v":["28.15","28.14","28.15","28.15","28.14","28.14","28.13","28.13","28.12","28.11"],
+            "vT":["2014-08-20T14:32:57.126Z","/PT10S","/PT20S","/PT30S","/PT40S","/PT50S","/PT60S","/PT70S","/PT80S","/PT90S"]
         }
-    ]
+    }
+
+In this example, a series of sensor values and times are wrapped in a CloudEvent.
+
+SNON Messages (which include an message ID) can be sent over message-based protocols, such as UDP, MQTT or various real-time transports.
+
+SNON Fragments can be sent over stream-based protocols, such as TCP/IP, HTTP long-polling, or Websockets, where the source is associated with the connection.
 
 More examples can be found in section [3.0 SNON Examples](#examples).
 
 ## 1.2 Where does SNON Fit?
 
-In a typical sensor system, physical values are measured by sensors, which are managed by gateways. Gateways use SNON as a representation to send over a protocol (MQTT and HTTP are common) to real-time processing engines, storage repositories, and display/HMI systems.
+In a typical sensor system, physical values are measured by sensors, which are managed by gateways. Gateways use SNON as a representation to send measured values over a transport protocol (e.g. MQTT and HTTP) to sensor data processing engines, storage repositories, and display/HMI systems.
 
 <center>
 ![SNON Data Flow](images/snon_flow.png)
 <br>
-Figure 1 - SNON Data Flow
+Figure 1 - Reference Data Flow
 <br><br></center>
 
 SNON allows all of these components to work together. For example, real-time post-processing of sensor data, such as quantization, summarization, filtering, and multi-sensor fusion can be performed on SNON data, with the resulting derived values again being represented as SNON data, and forwarded on to later processing elements.
 
-## 2. The SNON Representation
+## 2. SNON Data Model
 
-SNON defines a JSON-based representation used to exchange data between entities within a sensor network:
+SNON defines a JSON-based representation used to exchange data between entities within a sensor network.
 
-1. At the outermost layer, an SNON collection (a JSON array) contains one or more SNON messages and/or SNON fragments
-2. The middle layer, an SNON message, uniquely identifies a contained SNON fragment.
-3. The innermost layer, an SNON fragment, contains information related to entities, measurements and/or values
+There are three different JSON data types defined:
 
-SNON Collections can also hold JOSE JWE encrypted and/or JWS signed SNON Collections. See [Section 5](#security) for more details on how SNON works with JOSE.
+1. SNON fragments contain information related to entities, measurements and/or values.
+2. SNON messages uniquely identify a SNON fragment.
+3. SNON collections contain one or more SNON messages and/or SNON fragments.
+
+SNON collections can also be signed and/or encrypted using the JOSE JWE and JWS standards. See [Section 5](#security) for more details on how SNON works with JOSE.
+
+SNON fragments can be encapsulated in other event data structures, such as [CloudEvents](https://github.com/cloudevents/spec/blob/v0.3/primer.md). See [Section 6](#encapsulation) for more details on how SNON works with CloudEvents.
 
 <center>
 ![SNON Model](images/snon_model.png)
@@ -181,11 +134,11 @@ Each SNON message shall contain one or more of the following JSON fields:
 
 | Field&nbsp;Name<br>(Short&nbsp;Name)    | Data Type     | Description   | Mandatory |
 | ------------- | ------------- | ------------- | --------- |
-| messageID<br>(mID) | JSON String | Globally unique identifier of an SNON message.<br><br>Uniquely identifies the message, allowing message receivers to identify duplicates. Every message generator shall ensure that each Message ID is globally unique by using a technique such as random or MAC-based UUID generation, as described in [RFC 4112](https://tools.ietf.org/html/rfc4122)<br><br>The value of this field shall be formatted as an [RFC 8141](https://tools.ietf.org/html/rfc8141) URN.<pre>Example 2.1.1<br><br>{<br>   "mID":"urn:uuid:cd9f930e-a3b4-423a-850b-3c81135f0f7e"<br>}</pre> | Mandatory |
-| messageTime<br>(mT) | JSON String | Creation time of an SNON message.<br><br>Indicates when an SNON message was created, allowing message receivers to determine if messages are missing or are received out of order.<br><br>The value of this field shall be formatted in [ISO 8601](https://www.iso.org/iso-8601-date-and-time-format.html) extended representation date/time format.<pre>Example 2.1.2<br><br>{<br>   "mID":"urn:uuid:cd9f930e-a3b4-423a-850b-3c81135f0f7e",<br>   "mT":"2014-08-20T14:32:57.126Z"<br>}</pre> | Mandatory |
-| message<br>(m) | JSON Objects | Contains an SNON Fragment to be included in the message.<br><br>Contains the SNON fragment included in the message.<br><br>The value of this field shall be a JSON Object containing SNON Device, Sensor, Measurement or Value fields.<pre>Example 2.1.4<br><br>{<br>   "mID":"urn:uuid:c01ceb9ef-6e75-409d-be81-337609e58aa1",<br>   "mT":"2014-08-20T14:32:57.126Z"<br>   "m":{...}<br>}</pre> | Mandatory |
+| messageID<br>(mID) | JSON String | Globally unique identifier of an SNON message.<br><br>Uniquely identifies the message, allowing message receivers to identify duplicates. Every message generator shall ensure that each Message ID is globally unique by using a technique such as random or MAC-based UUID generation, as described in [RFC 4112](https://tools.ietf.org/html/rfc4122)<br><br>The value of this field shall be formatted as an [RFC 8141](https://tools.ietf.org/html/rfc8141) URN.<br><br>When used with CloudEvents, the message ID shall be used as the value of the CloudEvents "id" field.<pre>Example 2.1.1<br><br>{<br>   "mID":"urn:uuid:cd9f930e-a3b4-423a-850b-3c81135f0f7e"<br>}</pre> | Mandatory |
+| messageTime<br>(mT) | JSON String | Creation time of an SNON message.<br><br>Indicates when an SNON message was created, allowing message receivers to determine if messages are missing or are received out of order.<br><br>The value of this field shall be formatted in [ISO 8601](https://www.iso.org/iso-8601-date-and-time-format.html) extended representation date/time format.<br><br>When used with CloudEvents, the message time shall be used as the value of the CloudEvents "time" field.<pre>Example 2.1.2<br><br>{<br>   "mID":"urn:uuid:cd9f930e-a3b4-423a-850b-3c81135f0f7e",<br>   "mT":"2014-08-20T14:32:57.126Z"<br>}</pre> | Mandatory |
+| message<br>(m) | JSON Objects | Contains an SNON Fragment to be included in the message.<br><br>Contains the SNON fragment included in the message.<br><br>The value of this field shall be a JSON Object containing SNON Device, Sensor, Measurement or Value fields.<br><br>When used with CloudEvents, the SNON fragment shall be used as the value of the CloudEvents "data" field.<pre>Example 2.1.4<br><br>{<br>   "mID":"urn:uuid:c01ceb9ef-6e75-409d-be81-337609e58aa1",<br>   "mT":"2014-08-20T14:32:57.126Z"<br>   "m":{...}<br>}</pre> | Mandatory |
 
-Each SNON message is immutable once created.
+Each SNON message shall be considered immutable once created.
 
 ## <a name="dfields"></a>2.2 Entity SNON Fields
 
@@ -194,11 +147,12 @@ A SNON Fragment may contain one or more of the following JSON fields:
 | Field&nbsp;Name<br>(Short&nbsp;Name)    | Data Type     | Description   | Mandatory |
 | ------------- | ------------- | ------------- | --------- |
 | entityID<br>(eID) | JSON String | Globally unique identifier of the entity.<br><br>Uniquely identifies the entity, allowing message receivers to determine which device the message contents or relation applies to. Every message generator shall ensure that each entity ID is globally unique by using a technique such as random or MAC-based UUID generation, as described in [RFC 4112](https://tools.ietf.org/html/rfc4122)<br><br>The value of this field shall be formatted as an [RFC 8141](https://tools.ietf.org/html/rfc8141) URN.<pre>Example 2.2.1<br><br>{<br>   "entityID":"urn:uuid:cd9f930e-a3b4-423a-850b-3c81135f0f7e"<br>}</pre> | Optional |
-| entityClass<br>(eC) | JSON String | Entity type indicator.<br><br>Identifies what the entity represents.<br><br>The value of this field shall be contain one of the following:<br><br>a) "sensor"<br>b) device<br>c) "location"<br><br>If this field is not present, the default value shall be "sensor".<pre>Example 2.2.2<br><br>{<br>   "entityClass":"device"<br>}</pre> | Optional, requires entityID |
-| entityName<br>(eN)     | JSON Object    | Descriptive Name of the entity.<br><br>Provides a set of human-readable names that describe the entity, allowing message receivers to list and identify the entity to end users.<br><br>The value of this field shall contain one or more JSON Strings, each with a name specifying the language tag as defined in [RFC 5646](https://tools.ietf.org/html/rfc5646), and a value containing a descriptive name of the entity in that language-region. <br><br>A name of "*" is used as a default language-region, as defined in [RFC 4647](https://tools.ietf.org/html/rfc4647).<pre>Example 2.3.2:<br><br>{<br>   "entityName": {<br>     "jp": "冷却水の温度",<br>     "en": "Cooling Water Temperature"<br>   }<br>}</pre> | Optional, requires entityID |
-| entityType<br>(eT)     | JSON Object   | Descriptive Name of the type of the entity.<br><br>Provides a set of human-readable names that describe the entity type, allowing message receivers to list and identify the device by type to end users.<br><br>The value of this field shall contain one or more JSON Strings, each with a name specifying the language tag as defined in [RFC 5646](https://tools.ietf.org/html/rfc5646), and a value containing a descriptive name of the sensor in that language-region. <br><br>A name of "*" is used as a default language-region, as defined in [RFC 4647](https://tools.ietf.org/html/rfc4647).<pre>Example 2.3.3:<br><br>{<br>   "entityType": {<br>     "jp": "温度センサー",<br>     "en": "Temperature Sensor"<br>   }<br>}</pre> | Optional, requires entityID |
-| entityRelations<br>(dR) | JSON Object containing JSON Arrays of JSON Strings | Globally unique identifiers of related entities.<br><br>Identifies relationships between entities. Each relationship is a JSON object with the name specifying the type of relationship, and the value containing an array of URIs specifying the related entities. Entity relationships are described in table 2.9.<br><br>The value of each ID shall be formatted as an [RFC 8141](https://tools.ietf.org/html/rfc8141) URN.<pre>Example 2.2.5<br><br>{<br>   "entityRelations": {<br>      "parent":["urn:uuid:cd9f930e-a3b4-423a-850b-3c81135f0f7e"]<br>   }<br>}</pre> | Optional, requires entityID |
-| precedentID<br>(pID) | JSON String | Globally unique identifier of a preceding SNON message.<br><br>Identifies a prior message to inherit fields from, allowing message senders to reduce network traffic by not repeating fields already accessible to a message receiver. SNON messages with a precedentID do not need to repeat information that has not changed. If an omitted field is present in the precedent message, the field from the precedent is inherited, and treated as if it were directly included in the message.<br><br>The value of this field shall be formatted as an [RFC 8141](https://tools.ietf.org/html/rfc8141) URN.<pre>Example 2.2.6<br><br>{<br>   "precedentID": "urn:uuid:cd9f930e-a3b4-423a-850b-3c81135f0f7e"<br>}</pre> | Optional |
+| entityClass<br>(eC) | JSON String | Entity type indicator.<br><br>Identifies what the entity represents.<br><br>The value of this field shall be one of the following strings:<br><br>a) "sensor"<br>b) "device"<br>c) "location"<br><br>If this field is not present, the default value shall be "sensor".<pre>Example 2.2.2<br><br>{<br>   "entityClass":"device"<br>}</pre> | Optional, requires entityID |
+| entityName<br>(eN)     | JSON Object    | Descriptive Name of the entity.<br><br>Provides a set of human-readable names that describe the entity, allowing message receivers to list and identify the entity to end users.<br><br>The value of this field shall contain one or more JSON Strings, each with a name specifying the language tag as defined in [RFC 5646](https://tools.ietf.org/html/rfc5646), and a value containing a descriptive name of the entity in that language-region. <br><br>A name of "*" is used as a default language-region, as defined in [RFC 4647](https://tools.ietf.org/html/rfc4647).<pre>Example 2.2.3:<br><br>{<br>   "entityName": {<br>     "jp": "冷却水の温度",<br>     "en": "Cooling Water Temperature"<br>   }<br>}</pre> | Optional, requires entityID |
+| entityTag<br>(eTag)     | JSON Object    | Identification tag for the entity.<br><br>The value of this field shall be a string containing the P&ID letters and loop number as defined in [ANSI/ISA-S5.1](https://www.isa.org/isa5-1/).<pre>Example 2.2.4:<br><br>{<br>   "entityTag": "TT1123"<br>}</pre> | Optional, requires entityID |
+| entityType<br>(eT)     | JSON Object   | Descriptive Name of the type of the entity.<br><br>Provides a set of human-readable names that describe the entity type, allowing message receivers to list and identify the device by type to end users.<br><br>The value of this field shall contain one or more JSON Strings, each with a name specifying the language tag as defined in [RFC 5646](https://tools.ietf.org/html/rfc5646), and a value containing a descriptive name of the sensor in that language-region. <br><br>A name of "*" is used as a default language-region, as defined in [RFC 4647](https://tools.ietf.org/html/rfc4647).<pre>Example 2.2.5:<br><br>{<br>   "entityType": {<br>     "jp": "温度センサー",<br>     "en": "Temperature Sensor"<br>   }<br>}</pre> | Optional, requires entityID |
+| entityRelations<br>(dR) | JSON Object containing JSON Arrays of JSON Strings | Globally unique identifiers of related entities.<br><br>Identifies relationships between entities. Each relationship is a JSON object with the name specifying the type of relationship, and the value containing an array of URIs specifying the related entities. Entity relationships are described in table 2.9.<br><br>The value of each ID shall be formatted as an [RFC 8141](https://tools.ietf.org/html/rfc8141) URN.<pre>Example 2.2.6<br><br>{<br>   "entityRelations": {<br>      "parent":["urn:uuid:cd9f930e-a3b4-423a-850b-3c81135f0f7e"]<br>   }<br>}</pre> | Optional, requires entityID |
+| precedentID<br>(pID) | JSON String | Globally unique identifier of a preceding SNON message.<br><br>Identifies a prior message to inherit fields from, allowing message senders to reduce network traffic by not repeating fields already accessible to a message receiver. SNON messages with a precedentID do not need to repeat information that has not changed. If an omitted field is present in the precedent message, the field from the precedent is inherited, and treated as if it were directly included in the message.<br><br>The value of this field shall be formatted as an [RFC 8141](https://tools.ietf.org/html/rfc8141) URN.<pre>Example 2.2.7<br><br>{<br>   "precedentID": "urn:uuid:cd9f930e-a3b4-423a-850b-3c81135f0f7e"<br>}</pre> | Optional |
 
 When a SNON Fragment contains a precedentID, the message sender should ensure that the message receiver has access to the specified message in order to permit the message to be "resolved". Fragments with a precedentID that cannot be accessed is "unresolvable", and shall not be used.
 
@@ -758,7 +712,7 @@ SNON messages and fragments can be validated using the below [JSON schema](http:
                 "type": "object",
                 "minProperties": 1,
                 "patternProperties": {
-                    "^*": {
+                    "^.*": {
                         "$ref": "#/definitions/type_intl_name"
                     }
                 },
@@ -811,7 +765,7 @@ SNON messages and fragments can be validated using the below [JSON schema](http:
                 "type": "object",
                 "minProperties": 1,
                 "patternProperties": {
-                    "^*": {
+                    "^.*": {
                         "type": "array",
                         "minItems": 1,
                         "items": {
@@ -864,13 +818,13 @@ SNON messages and fragments can be validated using the below [JSON schema](http:
         }
     }
 
-The following constraints are not validated by this schema, and must be validated by the SNON receiver:
+The following constraints are not validated by this schema, and shall be validated by the SNON receiver:
 
 * Resolvability of precedentID
 * Equal number of array items in valueTime, value, valueMax, valueMin and valueTimeout
-* First item in valueTime must be an ISO 8601 time (subsequent items may be an ISO 8601 duration)
-* If there is a valueTime, at least one of value, valueMax or valueMin must be present
-* Contents of value, valueMax and valueMin must correspond to resolved measureType
+* First item in valueTime shall be an ISO 8601 time (subsequent items may be an ISO 8601 duration)
+* If there is a valueTime, at least one of value, valueMax or valueMin shall be present
+* Contents of value, valueMax and valueMin shall correspond to resolved measureType
 * Validity of SNON fragments or messages contained within a JWS "payload" or JWE "ciphertext" field
 
 ## <a name="security"></a>5.0 SNON Security
@@ -903,11 +857,49 @@ When traversing relationships or resolving precedents, it is important to verify
 
 Since Sensor IDs are typically used as MQTT topic names, it is strongly recommended that these be opaque (or hashes) to ensure that information is not leaked. This is why the use of hierarchical MQTT topic names are not recommended, as this will leak information about relationships between sensors.
 
-## 6.0 SNON License
+## <a name="encapsulation"></a>6.0 SNON Encapsulation
+
+The Cloud Native Computing Foundation (CNCF) [CloudEvents standard](https://github.com/cloudevents/spec/blob/v0.3/spec.md) provides a standard way to connect systems where the change of state in one system causes code to execute in another system.
+
+When used to encapsulate an SNON fragment, CloudEvents fields are used in place of the fields in a SNON message.
+
+| Field&nbsp;Name    | Data Type     | Description   | Mandatory |
+| ------------- | ------------- | ------------- | --------- |
+| specversion | JSON String | The version of the CloudEvents specification which the event uses. This enables the interpretation of the context. Compliant event producers shall use the value "0.3". | Mandatory |
+| type | JSON String | Type of occurrence which has happened.<br><br>Shall be set to the value "org.snon.v2". | Mandatory |
+| schemaurl | JSON Objects | A link to the schema that the data attribute adheres to.<br><br>Shall be set to the value "http://www.snon.org/v2/snon-schema.json". | Optional |
+| id | JSON String | Identifies the event.<br><br>Shall be set to the messageID. | Mandatory |
+| source | JSON String | Identifies the context in which an event happened.<br><br>Shall be set to the ID of the entity that is sending the event. | Mandatory |
+| subject | JSON String | This describes the subject of the event in the context of the event producer (identified by source).<br><br>If used, shall be set to entityID specified in the encapsulated SNON fragment. | Optional |
+| time | JSON String | Timestamp of when the event happened.<br><br>Shall be set to the messageTime. | Mandatory (1) |
+| data | JSON Object | The event payload.<br><br>Shall be set to the message (SNON Fragment). | Mandatory |
+
+(1) While the time field is optional in CloudEvents, it is mandatory when being used to encapsulate SNON fragments.
+
+An example of an SNON fragment encapsulated in a CloudEvent is shown below in Example 6.1:
+
+    Example 6.1 - CloudEvents encapsulation
+
+    {
+        "specversion": "0.3",
+        "type": "org.snon.v2",
+        "schemaurl": "http://www.snon.org/v2/snon-schema.json",
+        "source": "urn:uuid:407ec909-2519-4a2a-980b-ee75a47020ad",
+        "id": "urn:uuid:f4dfec0c-259b-4f1b-9eba-9070a4d64b7b",
+        "time": "2014-08-20T14:34:56.125Z",
+        "data" : {
+            "entityID": "urn:uuid:1635a44f-b770-4418-8f05-e721823e8e41",
+            "value" : ["29.3"],
+            "valueTime" : ["2014-08-20T14:32:46.125Z"]
+        }
+    }
+
+
+## 7.0 SNON License
 
 Clear BSD License
 
-Copyright (c) – 2017, NetApp, Inc.  All rights reserved. 
+Copyright (c) – 2019, NetApp, Inc.  All rights reserved. 
     
 Redistribution and use in source and binary forms, with or without modification, are
 permitted (subject to the limitations in the disclaimer below) provided that the
@@ -933,11 +925,14 @@ INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT
 STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF
 THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-## 7.0 SNON Changelog
+## 8.0 SNON Changelog
 
-SNON 2.0 2017-11-28
+SNON 2.1 2019-08-15
 
-![](logos/snon_small.png)
+* Added encapsulation guidance for CNCF [CloudEvents](https://github.com/cloudevents/spec/blob/v0.3/primer.md)
+* Added Entity Tag for ISA-5.1 naming conventions
+
+[SNON 2.0 2017-11-28](v2/index.html)
 
 * Added JSON schema
 * Specified where user-defined fields are allowed
