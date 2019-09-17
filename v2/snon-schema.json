@@ -138,7 +138,7 @@
             "type": "object",
             "minProperties": 1,
             "patternProperties": {
-                "^*": {
+                "^.*": {
                     "$ref": "#/definitions/type_intl_name"
                 }
             },
@@ -191,7 +191,7 @@
             "type": "object",
             "minProperties": 1,
             "patternProperties": {
-                "^*": {
+                "^.*": {
                     "type": "array",
                     "minItems": 1,
                     "items": {
