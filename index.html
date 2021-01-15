@@ -5,7 +5,7 @@
 <xmp theme="united" style="display:none;">
 ![](logos/snon_small.png)
 
-Revision 3.0.0, 2020-12-27
+Revision 3.0.1, 2021-01-12
 
 ## Table of Contents
 
@@ -303,8 +303,9 @@ All SNON Fragments may contain the following JSON fields:
 | entityID<br>(eID) | JSON String | Globally unique identifier of the entity.<br><br>Uniquely identifies the entity, allowing fragment receivers to determine which device the fragment contents or relation applies to. Every fragment generator shall ensure that each entity ID is globally unique by using a technique such as random or MAC-based UUID generation, as described in [RFC 4112](https://tools.ietf.org/html/rfc4122)<br><br>The value of this field shall be formatted as an [RFC 8141](https://tools.ietf.org/html/rfc8141) URN.<br><br><b>Example 2.3.1</b><pre>{<br>   "entityID": "urn:uuid:cd9f930e-a3b4-423a-850b-3c81135f0f7e"<br>}</pre> | Mandatory |
 | entityClass<br>(eC) | JSON String | SNON Fragment type.<br><br>Identifies what the entity represents.<br><br>The value of this field shall be one of the following strings:<br><br>a) "value"<br>b) "series"<br>c) "sensor"<br>d) "measurand"<br>e) "device"<br>f) "location"<br>g) "relationship"<br><br>If this field is not present, the default value shall be "value".<br><br><b>Example 2.3.2</b><pre>{<br>   "entityClass": "series"<br>}</pre> | Mandatory (except for value fragments) |
 | entityName<br>(eN)     | JSON Object    | Descriptive Name of the entity.<br><br>Provides a set of human-readable names that describe the entity, allowing fragment receivers to list and identify the entity to end users.<br><br>The value of this field shall contain one or more JSON Strings, each with a name specifying the language tag as defined in [RFC 5646](https://tools.ietf.org/html/rfc5646), and a value containing a descriptive name of the entity in that language-region. <br><br>A name of "*" is used as a default language-region, as defined in [RFC 4647](https://tools.ietf.org/html/rfc4647).<br><br><b>Example 2.3.3</b><pre>{<br>   "entityName": {<br>     "jp": "冷却水の温度",<br>     "en": "Cooling Water Temperature"<br>   }<br>}</pre> | Optional |
-| entityRelations<br>(eR) | JSON Object containing JSON Arrays of JSON Strings | Globally unique identifiers of related entities.<br><br>Identifies relationships between entities. Each relationship is a JSON object with the name specifying the type of relationship, and the value containing an array of URIs specifying the related entities. Relationships are described in more detail in [Section 3](#rel).<br><br>The value of each ID shall be formatted as an [RFC 8141](https://tools.ietf.org/html/rfc8141) URN.<br><br><b>Example 2.3.4</b><pre>{<br>   "entityRelations": {<br>      "child-of": ["urn:uuid:cd9f930e-a3b4-423a-850b-3c81135f0f7e"]<br>   }<br>}</pre> | Optional |
-| extensions<br>(ext) | JSON Object | Contains user-defined fields extending a fragment.<br><br><b>Example 2.3.5</b><pre>{<br>   "extensions": {<br>      "modbus": {<br>         "unitID": "1",<br>         "address": "7036",<br>         "type": "IF32"<br>       }<br>   }<br>}</pre> | Optional |
+| entityType<br>(eT)     | JSON Object   | Descriptive Name of the type of the entity.<br><br>Provides a set of human-readable names that describe the entity type.<br><br>The value of this field shall contain one or more JSON Strings, each with a name specifying the language tag as defined in [RFC 5646](https://tools.ietf.org/html/rfc5646), and a value containing a descriptive name of the sensor in that language-region. <br><br>A name of "*" is used as a default language-region, as defined in [RFC 4647](https://tools.ietf.org/html/rfc4647).<pre>Example 2.3.4:<br><br>{<br>   "entityType": {<br>     "jp": "温度センサー",<br>     "en": "Temperature Sensor"<br>   }<br>}</pre> | Optional |
+| entityRelations<br>(eR) | JSON Object containing JSON Arrays of JSON Strings | Globally unique identifiers of related entities.<br><br>Identifies relationships between entities. Each relationship is a JSON object with the name specifying the type of relationship, and the value containing an array of URIs specifying the related entities. Relationships are described in more detail in [Section 3](#rel).<br><br>The value of each ID shall be formatted as an [RFC 8141](https://tools.ietf.org/html/rfc8141) URN.<br><br><b>Example 2.3.5</b><pre>{<br>   "entityRelations": {<br>      "child-of": ["urn:uuid:cd9f930e-a3b4-423a-850b-3c81135f0f7e"]<br>   }<br>}</pre> | Optional |
+| extensions<br>(ext) | JSON Object | Contains user-defined fields extending a fragment.<br><br><b>Example 2.3.6</b><pre>{<br>   "extensions": {<br>      "modbus": {<br>         "unitID": "1",<br>         "address": "7036",<br>         "type": "IF32"<br>       }<br>   }<br>}</pre> | Optional |
 
 ### <a name="data.value"></a>2.4 Value SNON Fields
 
@@ -318,6 +319,8 @@ Value SNON fragments may also contain the following JSON fields:
 | valueMin<br>(vMin) | JSON Array of JSON Strings | Indication of one or more minimum values measured from the sensor.<br><br>Provides an indication of a minimum measured value during a given interval in time. Min/Max/Average values are typically used when sensor samples a value at a higher rate then is reported, and when the envelope contains important information.<br><br>The value of this field shall contain one or more JSON Strings, with the contents of each string corresponding to the type of the sensor. All value array fields shall have the same number of entries, with the order consistent across fields.<br><br><b>Example 2.4.4</b><pre>{<br>   "value": ["10"],<br>   "valueMax": ["12"],<br>   "valueMin": ["8"],<br>   "valueTime": ["2014-08-20T14:32:56.125Z"]<br>}</pre> | Optional |
 | valueTimeout<br>(vTo) | JSON Array of JSON Strings | Indication of the timeout associated with each value.<br><br>Provides a measure of how long a given value should be considered valid. If the specified time duration since the valueTime has been exceeded, the corresponding value shall no longer be considered valid.<br><br>When present, this field overrides a measureTimeout field.<br><br>The value of this field shall contain one or more JSON Strings, with the contents of each string containing a numeric value measured in seconds.<br><br><b>Example 2.4.5</b><pre>{<br>   "value": ["10"],<br>   "valueTime": ["2014-08-20T14:32:56.125Z"],<br>   "valueTimeout": ["0.1"]<br>}</pre> | Optional  |
 | valueError<br>(vE) | JSON String | Indication that errors are present.<br><br>Provides an indication of errors associated with value or set of values.<br><br>The value of this field shall contain a string describing the error. The contents of the error string is sensor-dependent.<br><br><b>Example 2.4.6</b><pre>{<br>   "value": ["10"],<br>   "valueTime": ["2014-08-20T14:32:56.125Z"],<br>   "valueError": "Out of Calibration"<br>}</pre> | Optional, requires valueTime  |
+
+Value fragments shall contain an "entityID" field and may include an "entityClass" field set to "value".
 
 #### Value Fragment Schema
 
@@ -368,7 +371,19 @@ Value SNON fragments may also contain the following JSON fields:
 
 ### <a name="data.series"></a>2.5 Series SNON Fields
 
-Value SNON fragments do not contain any additional series-specific fields.
+Series SNON fragments may also contain the following measure JSON fields that will act as a default unless overridden by a measurand:
+
+* measureSpanLow (meSL)
+* measureSpanHigh (meSH)
+* measureDisplayLow (meDL)
+* measureDisplayHigh (meDH)
+* measureDisplayUnit (meDU)
+* measureUpdateRate (meUR)
+* measureTimeout (meTo)
+* measureResolution (meR)
+* measureAccuracy (meAc)
+
+These fields are described in [Section 2.7](#data.measurand).
 
 #### Series Fragment Schema
 
@@ -383,8 +398,18 @@ Value SNON fragments do not contain any additional series-specific fields.
                 "entityID":             { "$ref": "#/definitions/type_id" },
                 "entityClass":          { "type": "string",
                                           "enum": [ "series" ] },
+                "entityType":           { "$ref": "#/definitions/type_intl_name" },
                 "entityName":           { "$ref": "#/definitions/type_intl_name" },
                 "entityRelations":      { "$ref": "#/definitions/type_relations" },
+                "measureSpanLow":       { "$ref": "#/definitions/type_numeric_string" },
+                "measureSpanHigh":      { "$ref": "#/definitions/type_numeric_string" },
+                "measureDisplayLow":    { "$ref": "#/definitions/type_numeric_string" },
+                "measureDisplayHigh":   { "$ref": "#/definitions/type_numeric_string" },
+                "measureDisplayUnit":   { "$ref": "#/definitions/type_intl_name" },
+                "measureUpdateRate":    { "$ref": "#/definitions/type_numeric_string" },
+                "measureTimeout":       { "$ref": "#/definitions/type_numeric_string" },
+                "measureResolution":    { "$ref": "#/definitions/type_numeric_string" },
+                "measureAccuracy":      { "$ref": "#/definitions/type_numeric_string" },
                 "extensions":           { "$ref": "#/definitions/type_extensions" }
             },
             "additionalProperties": false
@@ -399,8 +424,18 @@ Value SNON fragments do not contain any additional series-specific fields.
                 "eID":                  { "$ref": "#/definitions/type_id" },
                 "eC":                   { "type": "string",
                                           "enum": [ "series" ] },
+                "eT":                   { "$ref": "#/definitions/type_intl_name" },
                 "eN":                   { "$ref": "#/definitions/type_intl_name" },
                 "eR":                   { "$ref": "#/definitions/type_relations" },
+                "meSL":                 { "$ref": "#/definitions/type_numeric_string" },
+                "meSH":                 { "$ref": "#/definitions/type_numeric_string" },
+                "meDL":                 { "$ref": "#/definitions/type_numeric_string" },
+                "meDH":                 { "$ref": "#/definitions/type_numeric_string" },
+                "meDU":                 { "$ref": "#/definitions/type_intl_name" },
+                "meUR":                 { "$ref": "#/definitions/type_numeric_string" },
+                "meTo":                 { "$ref": "#/definitions/type_numeric_string" },
+                "meR":                  { "$ref": "#/definitions/type_numeric_string" },
+                "meAc":                 { "$ref": "#/definitions/type_numeric_string" },
                 "ext":                  { "$ref": "#/definitions/type_extensions" }
             },
             "additionalProperties": false
@@ -429,6 +464,7 @@ Sensor SNON Fragments may also contain the following JSON fields:
                 "entityID":             { "$ref": "#/definitions/type_id" },
                 "entityClass":          { "type": "string",
                                           "enum": [ "sensor" ] },
+                "entityType":           { "$ref": "#/definitions/type_intl_name" },
                 "entityName":           { "$ref": "#/definitions/type_intl_name" },
                 "entityRelations":      { "$ref": "#/definitions/type_relations" },
                 "sensorTag":            { "type": "string" },
@@ -446,6 +482,7 @@ Sensor SNON Fragments may also contain the following JSON fields:
                 "eID":                  { "$ref": "#/definitions/type_id" },
                 "eC":                   { "type": "string",
                                           "enum": [ "sensor" ] },
+                "eT":                   { "$ref": "#/definitions/type_intl_name" },
                 "eN":                   { "$ref": "#/definitions/type_intl_name" },
                 "eR":                   { "$ref": "#/definitions/type_relations" },
                 "sT":                   { "type": "string" },
@@ -494,6 +531,7 @@ Measurand SNON fragments may also contain the following JSON fields:
                 "entityID":             { "$ref": "#/definitions/type_id" },
                 "entityClass":          { "type": "string",
                                           "enum": [ "measurand" ] },
+                "entityType":           { "$ref": "#/definitions/type_intl_name" },
                 "entityName":           { "$ref": "#/definitions/type_intl_name" },
                 "entityRelations":      { "$ref": "#/definitions/type_relations" },
                 "measureUnit":          { "type": "string" },
@@ -527,6 +565,7 @@ Measurand SNON fragments may also contain the following JSON fields:
                 "eID":                  { "$ref": "#/definitions/type_id" },
                 "eC":                   { "type": "string",
                                           "enum": [ "measurand" ] },
+                "eT":                   { "$ref": "#/definitions/type_intl_name" },
                 "eN":                   { "$ref": "#/definitions/type_intl_name" },
                 "eR":                   { "$ref": "#/definitions/type_relations" },
                 "meU":                  { "type": "string" },
@@ -569,6 +608,7 @@ Device SNON fragments do not contain any additional series-specific fields.
                 "entityID":             { "$ref": "#/definitions/type_id" },
                 "entityClass":          { "type": "string",
                                           "enum": [ "device" ] },
+                "entityType":           { "$ref": "#/definitions/type_intl_name" },
                 "entityName":           { "$ref": "#/definitions/type_intl_name" },
                 "entityRelations":      { "$ref": "#/definitions/type_relations" },
                 "extensions":           { "$ref": "#/definitions/type_extensions" }
@@ -585,6 +625,7 @@ Device SNON fragments do not contain any additional series-specific fields.
                 "eID":                  { "$ref": "#/definitions/type_id" },
                 "eC":                   { "type": "string",
                                           "enum": [ "device" ] },
+                "eT":                   { "$ref": "#/definitions/type_intl_name" },
                 "eN":                   { "$ref": "#/definitions/type_intl_name" },
                 "eR":                   { "$ref": "#/definitions/type_relations" },
                 "ext":                  { "$ref": "#/definitions/type_extensions" }
@@ -610,6 +651,7 @@ Location SNON fragments do not contain any additional series-specific fields.
                 "entityID":             { "$ref": "#/definitions/type_id" },
                 "entityClass":          { "type": "string",
                                           "enum": [ "location" ] },
+                "entityType":           { "$ref": "#/definitions/type_intl_name" },
                 "entityName":           { "$ref": "#/definitions/type_intl_name" },
                 "entityRelations":      { "$ref": "#/definitions/type_relations" },
                 "extensions":           { "$ref": "#/definitions/type_extensions" }
@@ -626,6 +668,7 @@ Location SNON fragments do not contain any additional series-specific fields.
                 "eID":                  { "$ref": "#/definitions/type_id" },
                 "eC":                   { "type": "string",
                                           "enum": [ "location" ] },
+                "eT":                   { "$ref": "#/definitions/type_intl_name" },
                 "eN":                   { "$ref": "#/definitions/type_intl_name" },
                 "eR":                   { "$ref": "#/definitions/type_relations" },
                 "ext":                  { "$ref": "#/definitions/type_extensions" }
@@ -663,6 +706,7 @@ Relationship objects are a superset of entityRelations.
                 "entityID":             { "$ref": "#/definitions/type_id" },
                 "entityClass":          { "type": "string",
                                           "enum": [ "relationship" ] },
+                "entityType":           { "$ref": "#/definitions/type_intl_name" },
                 "entityName":           { "$ref": "#/definitions/type_intl_name" },
                 "relSource":            { "$ref": "#/definitions/type_id" },
                 "relDestination":       { "$ref": "#/definitions/type_id" },
@@ -684,6 +728,7 @@ Relationship objects are a superset of entityRelations.
                 "eID":                  { "$ref": "#/definitions/type_id" },
                 "eC":                   { "type": "string",
                                           "enum": [ "relationship" ] },
+                "eT":                   { "$ref": "#/definitions/type_intl_name" },
                 "eN":                   { "$ref": "#/definitions/type_intl_name" },
                 "rS":                   { "$ref": "#/definitions/type_id" },
                 "rD":                   { "$ref": "#/definitions/type_id" },
@@ -1071,6 +1116,10 @@ THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ## <a name="changelog"></a>9 SNON Changelog
 
+### SNON 3.0.1 2021-01-12
+
+* Allow some measurement fields in series fragment (overridden if in measurand)
+
 ### SNON 3.0 2020-12-27
 
 Non-backward compatible changes:
@@ -1080,7 +1129,6 @@ Non-backward compatible changes:
 * Added series fragments and measurand fragments to replace precedentID
 * entityID now mandatory
 * entityTag replaced with sensorTag
-* Retired entityType
 * Retired derived_from relationship
 
 Backward compatible changes:
