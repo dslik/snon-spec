@@ -29,7 +29,7 @@
                 "required": [
                     "eID",
                     "v",
-                    "vt"
+                    "vT"
                 ],
                 "properties": {
                     "eID":                  { "$ref": "#/definitions/type_id" },
@@ -57,8 +57,18 @@
                     "entityID":             { "$ref": "#/definitions/type_id" },
                     "entityClass":          { "type": "string",
                                               "enum": [ "series" ] },
+                    "entityType":           { "$ref": "#/definitions/type_intl_name" },
                     "entityName":           { "$ref": "#/definitions/type_intl_name" },
                     "entityRelations":      { "$ref": "#/definitions/type_relations" },
+                    "measureSpanLow":       { "$ref": "#/definitions/type_numeric_string" },
+                    "measureSpanHigh":      { "$ref": "#/definitions/type_numeric_string" },
+                    "measureDisplayLow":    { "$ref": "#/definitions/type_numeric_string" },
+                    "measureDisplayHigh":   { "$ref": "#/definitions/type_numeric_string" },
+                    "measureDisplayUnit":   { "$ref": "#/definitions/type_intl_name" },
+                    "measureUpdateRate":    { "$ref": "#/definitions/type_numeric_string" },
+                    "measureTimeout":       { "$ref": "#/definitions/type_numeric_string" },
+                    "measureResolution":    { "$ref": "#/definitions/type_numeric_string" },
+                    "measureAccuracy":      { "$ref": "#/definitions/type_numeric_string" },
                     "extensions":           { "$ref": "#/definitions/type_extensions" }
                 },
                 "additionalProperties": false
@@ -73,8 +83,18 @@
                     "eID":                  { "$ref": "#/definitions/type_id" },
                     "eC":                   { "type": "string",
                                               "enum": [ "series" ] },
+                    "eT":                   { "$ref": "#/definitions/type_intl_name" },
                     "eN":                   { "$ref": "#/definitions/type_intl_name" },
                     "eR":                   { "$ref": "#/definitions/type_relations" },
+                    "meSL":                 { "$ref": "#/definitions/type_numeric_string" },
+                    "meSH":                 { "$ref": "#/definitions/type_numeric_string" },
+                    "meDL":                 { "$ref": "#/definitions/type_numeric_string" },
+                    "meDH":                 { "$ref": "#/definitions/type_numeric_string" },
+                    "meDU":                 { "$ref": "#/definitions/type_intl_name" },
+                    "meUR":                 { "$ref": "#/definitions/type_numeric_string" },
+                    "meTo":                 { "$ref": "#/definitions/type_numeric_string" },
+                    "meR":                  { "$ref": "#/definitions/type_numeric_string" },
+                    "meAc":                 { "$ref": "#/definitions/type_numeric_string" },
                     "ext":                  { "$ref": "#/definitions/type_extensions" }
                 },
                 "additionalProperties": false
@@ -91,6 +111,7 @@
                     "entityID":             { "$ref": "#/definitions/type_id" },
                     "entityClass":          { "type": "string",
                                               "enum": [ "sensor" ] },
+                    "entityType":           { "$ref": "#/definitions/type_intl_name" },
                     "entityName":           { "$ref": "#/definitions/type_intl_name" },
                     "entityRelations":      { "$ref": "#/definitions/type_relations" },
                     "sensorTag":            { "type": "string" },
@@ -108,6 +129,7 @@
                     "eID":                  { "$ref": "#/definitions/type_id" },
                     "eC":                   { "type": "string",
                                               "enum": [ "sensor" ] },
+                    "eT":                   { "$ref": "#/definitions/type_intl_name" },
                     "eN":                   { "$ref": "#/definitions/type_intl_name" },
                     "eR":                   { "$ref": "#/definitions/type_relations" },
                     "sT":                   { "type": "string" },
@@ -127,6 +149,7 @@
                     "entityID":             { "$ref": "#/definitions/type_id" },
                     "entityClass":          { "type": "string",
                                               "enum": [ "measurand" ] },
+                    "entityType":           { "$ref": "#/definitions/type_intl_name" },
                     "entityName":           { "$ref": "#/definitions/type_intl_name" },
                     "entityRelations":      { "$ref": "#/definitions/type_relations" },
                     "measureUnit":          { "type": "string" },
@@ -160,6 +183,7 @@
                     "eID":                  { "$ref": "#/definitions/type_id" },
                     "eC":                   { "type": "string",
                                               "enum": [ "measurand" ] },
+                    "eT":                   { "$ref": "#/definitions/type_intl_name" },
                     "eN":                   { "$ref": "#/definitions/type_intl_name" },
                     "eR":                   { "$ref": "#/definitions/type_relations" },
                     "meU":                  { "type": "string" },
@@ -195,6 +219,7 @@
                     "entityID":             { "$ref": "#/definitions/type_id" },
                     "entityClass":          { "type": "string",
                                               "enum": [ "device" ] },
+                    "entityType":           { "$ref": "#/definitions/type_intl_name" },
                     "entityName":           { "$ref": "#/definitions/type_intl_name" },
                     "entityRelations":      { "$ref": "#/definitions/type_relations" },
                     "extensions":           { "$ref": "#/definitions/type_extensions" }
@@ -211,6 +236,7 @@
                     "eID":                  { "$ref": "#/definitions/type_id" },
                     "eC":                   { "type": "string",
                                               "enum": [ "device" ] },
+                    "eT":                   { "$ref": "#/definitions/type_intl_name" },
                     "eN":                   { "$ref": "#/definitions/type_intl_name" },
                     "eR":                   { "$ref": "#/definitions/type_relations" },
                     "ext":                  { "$ref": "#/definitions/type_extensions" }
@@ -229,6 +255,7 @@
                     "entityID":             { "$ref": "#/definitions/type_id" },
                     "entityClass":          { "type": "string",
                                               "enum": [ "location" ] },
+                    "entityType":           { "$ref": "#/definitions/type_intl_name" },
                     "entityName":           { "$ref": "#/definitions/type_intl_name" },
                     "entityRelations":      { "$ref": "#/definitions/type_relations" },
                     "extensions":           { "$ref": "#/definitions/type_extensions" }
@@ -245,6 +272,7 @@
                     "eID":                  { "$ref": "#/definitions/type_id" },
                     "eC":                   { "type": "string",
                                               "enum": [ "location" ] },
+                    "eT":                   { "$ref": "#/definitions/type_intl_name" },
                     "eN":                   { "$ref": "#/definitions/type_intl_name" },
                     "eR":                   { "$ref": "#/definitions/type_relations" },
                     "ext":                  { "$ref": "#/definitions/type_extensions" }
@@ -266,6 +294,7 @@
                     "entityID":             { "$ref": "#/definitions/type_id" },
                     "entityClass":          { "type": "string",
                                               "enum": [ "relationship" ] },
+                    "entityType":           { "$ref": "#/definitions/type_intl_name" },
                     "entityName":           { "$ref": "#/definitions/type_intl_name" },
                     "relSource":            { "$ref": "#/definitions/type_id" },
                     "relDestination":       { "$ref": "#/definitions/type_id" },
@@ -287,6 +316,7 @@
                     "eID":                  { "$ref": "#/definitions/type_id" },
                     "eC":                   { "type": "string",
                                               "enum": [ "relationship" ] },
+                    "eT":                   { "$ref": "#/definitions/type_intl_name" },
                     "eN":                   { "$ref": "#/definitions/type_intl_name" },
                     "rS":                   { "$ref": "#/definitions/type_id" },
                     "rD":                   { "$ref": "#/definitions/type_id" },
