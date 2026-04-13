@@ -1,9 +1,9 @@
-SNON Specification
+SNON 4.0 Specification
 ==================
 
 [![license][license-img]][github] [![github][github-img]][github]
 
-SNON is a specification for representating sensor values and related entities in JSON.
+SNON 4.0 is a specification for representating sensor values and related entities in JSON.
 
 Core functionality includes:
 
