@@ -1,0 +1,1181 @@
+<!DOCTYPE html>
+<html>
+<title>SNON 3 &mdash; Sensor Network Object Notation</title>
+<meta charset="utf-8">
+<xmp theme="united" style="display:none;">
+![](logos/snon_small.png)
+
+# HISTORICAL ARCHIVE - See latest version [here](https://www.snon.org/)
+
+Revision 3.0.1, 2021-01-12
+
+## Table of Contents
+
+1 [Introduction to SNON](#intro)<br>
+1.1 [What is SNON?](#intro.what)<br>
+1.2 [What is SNON for?](#intro.for)<br>
+1.3 [Why use SNON?](#intro.why)<br>
+1.4 [What does SNON look like?](#intro.examples)<br>
+1.5 [How are SNON fragments related?](#intro.related)<br>
+1.6 [How are SNON fragments used?](#intro.used)<br>
+
+2 [SNON Data Model](#data)<br>
+2.1 [SNON Fragments](#data.fragments)<br>
+2.2 [SNON Collections](#data.collections)<br>
+2.3 [Common SNON Fields](#data.entity)<br>
+2.4 [Value SNON Fields](#data.value)<br>
+2.5 [Series SNON Fields](#data.series)<br>
+2.6 [Sensor SNON Fields](#data.sensor)<br>
+2.7 [Measurand SNON Fields](#data.measurand)<br>
+2.8 [Device SNON Fields](#data.device)<br>
+2.9 [Location SNON Fields](#data.location)<br>
+2.10 [Relationship SNON Fields](#data.rel)<br>
+
+3 [SNON Entity Relationships](#rel)<br>
+3.1 [Relationship Model](#rel.model)<br>
+3.2 [General Relationships](#rel.general)<br>
+3.3 [Related Series Relationships](#rel.series)<br>
+3.4 [Custom Relationships](#rel.custom)<br>
+
+4 [SNON Examples](#examples)<br>
+
+5 [SNON Schema](#schema)<br>
+
+6 [SNON Security](#security)<br>
+6.1 [Encryption and Signing](#security.encryption)<br>
+6.2 [PKI](#security.pki)<br>
+
+7 [SNON Encapsulation](#encapsulation)<br>
+
+8 [SNON License](#license)<br>
+
+9 [SNON Changelog](#changelog)<br>
+
+<hr>
+
+## <a name="intro"></a>1 Introduction to SNON
+
+### <a name="intro.what"></a>1.1 What is SNON?
+
+SNON (Sensor Network Object Notation) is a third-generation data representation for sensor network data exchange.
+
+SNON defines a transport-agnostic message-fragment-based data exchange format for interoperable data exchange between sensor network devices, such as sensors, edge devices, gateways, processing devices, control systems, databases, historians, dashboards, visualization and reporting engines.
+
+### <a name="intro.for"></a>1.2 What is SNON for?
+
+* Representing sensor topologies, devices, sensors, series and values
+* Enabling discovery of sensor topologies, devices, sensors and series
+* Managing changes in sensor topologies and relationships over time
+* Encapsulation sensor data for transport, e.g. over [MQTT](http://mqtt.org/) or [CloudEvents](https://github.com/cloudevents/spec/blob/v1.0.1/spec.md)
+* Enabling efficient bulk transport of summarized and aggregated sensor data
+* Providing source attestation and secured transport of sensor data
+
+### <a name="intro.why"></a>1.3 Why use SNON?
+
+* SNON is easy for people to read and write
+* SNON is easy for machines to parse and generate
+* SNON is highly compressible, to reduce storage and network usage
+* SNON is based on [JSON](http://json.org/), which is widely supported by most platforms and programming languages
+* SNON is sensor independent, and uses conventions familiar to programmers who have worked with common sensor platforms
+* SNON is self-describing and extensible, with features only required when needed
+* SNON makes sensor data exchange interoperability easy
+
+### <a name="intro.examples"></a>1.4 What does SNON look like?
+
+Here are some examples of SNON in action:
+
+#### Example 1.4.1a - Value fragment containing a single measured value
+
+    [
+        {
+            "entityID": "urn:uuid:cd9f930e-a3b4-423a-850b-3c81135f0f7e",
+            "value": ["28.1"],
+            "valueTime": ["2014-08-20T14:32:57.126Z"]
+        }
+    ]
+
+This value fragment represents a single sampled measurement taken at a given point in time.
+
+#### Example 1.4.1b - Value fragment containing multiple measured values
+
+    [
+        {
+            "entityID": "urn:uuid:cd9f930e-a3b4-423a-850b-3c81135f0f7e",
+            "value": ["29.1", "28.9", "27.5", "28.1"],
+            "valueTime": ["2014-08-20T14:32:11.462Z", "2014-08-20T14:32:28.842Z", "2014-08-20T14:32:39.278Z", "2014-08-20T14:32:57.126Z"]
+        }
+    ]
+
+This value fragment represents four sampled measurements, taken at four different points in time. This is equivalent to four single-value fragments shown in example 1.4.1a, and is typically stored as four separate values.
+
+#### Example 1.4.1c - Value fragment containing a summary of multiple measured values
+
+    [
+        {
+            "entityID": "urn:uuid:cd9f930e-a3b4-423a-850b-3c81135f0f7e",
+            "value": ["28.4"],
+            "valueMax": ["29.1"],
+            "valueMin": ["27.5"],
+            "valueTime": ["2014-08-20T14:32:00.000Z/PT01M"]
+        }
+    ]
+
+This value fragment represents a time interval, and summarizes all of the samples taken within that time interval.
+
+#### Example 1.4.2 - Series fragment representing a collection of measured values
+
+    [
+        {
+            "entityID":"urn:uuid:cd9f930e-a3b4-423a-850b-3c81135f0f7e",
+            "entityClass": "series",
+            "entityName": {"jp": "冷却水の温度",  "*": "Cooling Water Temperature"},
+            "entityRelations": {
+                "child_of": ["urn:uuid:1c43d52a-ad3b-465e-a230-868251251f94"],
+                "measurand": ["urn:uuid:e079baf5-a894-4539-a3ce-7d7c7efdb3b3"]
+            }
+        }
+    ]
+
+This series fragment represents a series named "Cooling Water Temperature" (in English) that is measured by a specific sensor (see Example 1.4.4), and has measured values for a specific quantity (see Example 1.4.3). As this fragment has the same Entity ID as the value fragments in example 1.4.1, that means that those values are associated with this series.
+
+#### Example 1.4.3 - Measurand fragment representing a quantity of measurement
+
+    [
+        {
+            "entityID": "urn:uuid:e079baf5-a894-4539-a3ce-7d7c7efdb3b3",
+            "entityClass": "measurand",
+            "entityName": { "*": "Temperature" },
+            "measureUnit": "°C",
+            "measureType": "numeric",
+            "measureAcquire": "sample",
+            "measureDisplayUnit": { "en-us": "°F", "*": "°C" },
+            "measureUnitSuffix": { "en-us": " ℉", "*": " ℃" },
+            "measureUnitSuffixEx": { "en-us": " degrees Fahrenheit", "*": " degrees Celsius" }
+        }
+    ]
+
+This measurand (a definition of the quantity to be measured) fragment represents measurements of temperature. 
+
+#### Example 1.4.4 - Sensor fragment representing a measuring instrument
+
+    [
+        {
+            "entityID": "urn:uuid:1c43d52a-ad3b-465e-a230-868251251f94",
+            "entityClass": "sensor",
+            "entityName": {"*": "Cooling Supply Temperature Transducer"},
+            "entityRelations": {
+                "child_of": ["urn:uuid:324875ea-034c-401e-aec7-eb010de6a2c8"],
+                "measurand": ["urn:uuid:e079baf5-a894-4539-a3ce-7d7c7efdb3b3"]
+            },
+            "sensorTag": "TT1123"
+        }
+    ]
+
+This sensor fragment represents a measurement instrument that measures the temperature of the cooling water supply. 
+
+#### Example 1.4.5 - Device fragment representing a physical device
+
+    [
+        {
+            "entityID": "urn:uuid:324875ea-034c-401e-aec7-eb010de6a2c8",
+            "entityClass": "device",
+            "entityName": {"*": "Cooling Supply Temperature Transducer"},
+            "entityRelations": {
+                "child_of": ["urn:uuid:385bbd11-568c-4508-a1b9-9c3d8f4e3e57"]
+            
+            }
+        }
+    ]
+
+This device fragment represents a physical (or logical) device that includes a collection of devices and/or sensors.
+
+#### Example 1.4.6 - Location fragment representing the a location of a device
+
+    [
+        {
+            "entityID": "urn:uuid:385bbd11-568c-4508-a1b9-9c3d8f4e3e57",
+            "entityClass": "location",
+            "entityName": {"*": "Level 2, bay 4"}
+        }
+    ]
+
+This location fragment represents a location of a device.
+
+See [Section 4](#examples) for more examples.
+
+### <a name="intro.related"></a>1.5 How are SNON fragments related?
+
+<center>
+![SNON Fragment Relationships](images/snon_3_fragment_relations.png)
+<br>
+Figure 1 - Fragment Relationships
+<br><br></center>
+
+Each fragment has the following primary relationships:
+
+* Each value fragment is associated with one series fragment by entityID
+* Each series fragment is associated with zero or more value fragments by entityID
+* Each series fragment is associated with one measurand fragment by relation
+* Each series fragment is associated with one sensor fragment by relation
+* Each sensor fragment is associated with zero or more series fragments by relation
+* Each sensor fragment is associated with one sensor fragment by relation
+* Each sensor fragment is associated with one device fragment by relation
+* Each measurand fragment is associated with zero or more series fragments by relation
+* Each measurand fragment is associated with zero or more sensor fragments by relation
+* Each device fragment is associated with one or more location fragments by relation
+* Each device fragment is associated with zero or more sensor fragments by relation
+* Each location fragment is associated with one or more device fragments by relation
+* Each location fragment is associated with one or more location fragments by relation
+
+See [Section 3](#relationships) for details on additional relationships.
+
+### <a name="intro.used"></a>1.6 How are SNON fragments used?
+
+When two entities want to exchange sensor data, fragments are constructed, packaged together as needed into encapsulation formats such as CloudEvents, and is sent over transport protocols such as MQTT, Websockets, HTTP APIs, etc.
+
+There are three primary use cases:
+
+1. Sensor definition publishing - A sensor device publishes series, sensor, measurand, device and location fragments that are used to create/update a sensor catalog.
+2. Sensor value publishing - A sensor device publishes values for one or more series.
+3. Sensor value subscription - A sensor device receives values for one or more series, and sets an actuator.
+
+<hr>
+
+## <a name="data"></a>2 SNON Data Model
+
+### <a name="data.fragments"></a>2.1 SNON Fragments
+
+SNON defines seven "fragments": JSON objects used to exchange data between entities within a sensor network.
+
+* [value fragment](#data.value) - Represents one or more *measurements* for a given *measured quantity* by a given *measurement instrument* 
+* [series fragment](#data.series) - Represents one or more related value fragments for a given *measured quantity* by a given *measurement instrument*
+* [sensor fragment](#data.sensor) - Represents a component of a *measurement instrument* that performs *measurements* of a given *measured quantity*
+* [measurand fragment](#data.measurand) - Represents a *measured quantity*
+* [device fragment](#data.device) - Represents a *measurement instrument*
+* [location fragment](#data.location) - Represents a location of a *measurement instrument*
+* [relation fragment](#data.rel) - Represents a relation between two SNON entities
+
+SNON fragments may be encapsulated in other event data structures, such as [CloudEvents](https://github.com/cloudevents/spec/blob/v1.0.1/spec.md). See [Section 7](#encapsulation) for more details on how SNON works with CloudEvents.
+
+### <a name="data.collections"></a>2.2 SNON Collections
+
+SNON defines a "collection": A JSON array containing one or more SNON fragments.
+
+SNON collections may be signed and/or encrypted using the JOSE JWE and JWS standards, as described in [Section 6](#security).
+
+<center>
+![SNON Model](images/snon_3_object_model.png)
+<br>
+Figure 2 - SNON Object Model
+<br><br></center>
+
+#### Example 2.2.1 - An SNON collection with two fragments
+
+    [
+        {
+            "entityID":"urn:uuid:cd9f930e-a3b4-423a-850b-3c81135f0f7e",
+            "entityClass": "series",
+            "entityName": {"jp": "冷却水の温度",  "*": "Cooling Water Temperature"}
+        },
+        {
+            "entityID": "urn:uuid:cd9f930e-a3b4-423a-850b-3c81135f0f7e",
+            "value": ["28.1"],
+            "valueTime": ["2014-08-20T14:32:57.126Z"]
+        }
+    ]
+
+#### Example 2.2.2 - An encrypted SNON collection using JOSE JWE encryption
+
+    [
+        {
+            "encrypted_key": "YO03wcQVvap0_Z1i06zS9P9zy3FL8j1-3DeKpimAsgz4cM2Q4mHK7jdqLYaLVjHFf4jPT2PwV1Vm1DRPdT0H93qWO2fACX1Z5q0eGYaO15g91pd4HYXwTIfCkQL2uCGOzIvi7lbuiaV9kqCoAOkEeD-IPEmAXXAFPaY4UY4Jlw28KXdHj9JKVaLZhPnAwv6i59TOxOCAlrbhRSKXDzmzHXxK7hoo6N2dfxbQiTY7m7aYj_c-XwvcBf-x1i5vJ15BID4oUEZizvCT5EG1nZ3CF0xGfEc_8uQFa1lAY4rog3LqTtCYq2pvrEsCnpFfxRSwbh57gxy0T7ejnG_oSNL-dQ",
+            "iv":"G7qbtZKCry2IQvmL",
+            "protected":"eyJhbGciOiJSU0ExXzUiLCJlbmMiOiJBMTI4R0NNIn0",
+            "tag":"YFxioUzLdUfCMSJdm5eVjw",
+            "ciphertext":"H6HMYwGUY6y8vZeBT9w8D-nhu9irDT3qI7tWXElI2SR_AgaeQN-Im3AsTh4Wcf72imd466wspYoKRl-EptHNPfYHg2WxOOfVSC3iZwR7ovRHZ-3E_U9La4AY0_9fnKXDN_d0g8ssHhks6exEiJYWQfFyEs_V57wsIXEmelFXxbHBq7vkFptIxITYVvDOa_LsQ5eu5AnFXYRKdHE9Ih8E4qAs6b8KslZ3vVd06Kn0PApBmEOo56IF_0mgDMfv_RuMDfXrdnl83p5bffCX3qoyfxquLRT-fYFiNb5au9IaA1HOpKuJa-QkfcyWVz2u8ATtfrCS9TdYfDkgRHPCAzZEf0AUJejGhEIOT2l4Dr2tmK3_NDodqetYT9C298P2RiWqdx6p4doPMWOWb4iwm0kzcPnNqqu97OQyLofjHR4vJ2VsWibmMz6hTKnLooarpAjGylFaTO4KocAm0ybuMrQueldsk1nD7BYfzrrsIeWlVf5TYHyYbG7nJ4PgEVQV4PwoTVabrcRnJhrDNV5nC_mBYCKpdLnrSTlmiDn1-VtkrF7mdKR1NcRB9TWSCtO9Nj0ldLkalZy-tDXS4zrOoMz1Mm9_ol8Cw9Bih3agg4yFXppI5pxay_U8yOZ0oVYzIIP0DP0bVaLMv2WkjVDRJXIM8oupzgNM-k_ThTfwhkGq5NJSBsBvvRjl_gvYvfvc1fEIR7fcr_XIsqM5G4XbeniezeAWXi6olRLUV_wezJMa7U0eqAjGde4mAFRn3IjtUJvkbl-0ea8hbH7nqbsO3Mo"
+        }
+    ]
+
+### <a name="data.entity"></a>2.3 Common SNON Fields
+
+All SNON Fragments may contain the following JSON fields:
+
+| Field&nbsp;Name<br>(Short&nbsp;Name)    | Data Type     | Description   | Mandatory |
+| ------------- | ------------- | ------------- | --------- |
+| entityID<br>(eID) | JSON String | Globally unique identifier of the entity.<br><br>Uniquely identifies the entity, allowing fragment receivers to determine which device the fragment contents or relation applies to. Every fragment generator shall ensure that each entity ID is globally unique by using a technique such as random or MAC-based UUID generation, as described in [RFC 4112](https://tools.ietf.org/html/rfc4122)<br><br>The value of this field shall be formatted as an [RFC 8141](https://tools.ietf.org/html/rfc8141) URN.<br><br><b>Example 2.3.1</b><pre>{<br>   "entityID": "urn:uuid:cd9f930e-a3b4-423a-850b-3c81135f0f7e"<br>}</pre> | Mandatory |
+| entityClass<br>(eC) | JSON String | SNON Fragment type.<br><br>Identifies what the entity represents.<br><br>The value of this field shall be one of the following strings:<br><br>a) "value"<br>b) "series"<br>c) "sensor"<br>d) "measurand"<br>e) "device"<br>f) "location"<br>g) "relationship"<br><br>If this field is not present, the default value shall be "value".<br><br><b>Example 2.3.2</b><pre>{<br>   "entityClass": "series"<br>}</pre> | Mandatory (except for value fragments) |
+| entityName<br>(eN)     | JSON Object    | Descriptive Name of the entity.<br><br>Provides a set of human-readable names that describe the entity, allowing fragment receivers to list and identify the entity to end users.<br><br>The value of this field shall contain one or more JSON Strings, each with a name specifying the language tag as defined in [RFC 5646](https://tools.ietf.org/html/rfc5646), and a value containing a descriptive name of the entity in that language-region. <br><br>A name of "*" is used as a default language-region, as defined in [RFC 4647](https://tools.ietf.org/html/rfc4647).<br><br><b>Example 2.3.3</b><pre>{<br>   "entityName": {<br>     "jp": "冷却水の温度",<br>     "en": "Cooling Water Temperature"<br>   }<br>}</pre> | Optional |
+| entityType<br>(eT)     | JSON Object   | Descriptive Name of the type of the entity.<br><br>Provides a set of human-readable names that describe the entity type.<br><br>The value of this field shall contain one or more JSON Strings, each with a name specifying the language tag as defined in [RFC 5646](https://tools.ietf.org/html/rfc5646), and a value containing a descriptive name of the sensor in that language-region. <br><br>A name of "*" is used as a default language-region, as defined in [RFC 4647](https://tools.ietf.org/html/rfc4647).<pre>Example 2.3.4:<br><br>{<br>   "entityType": {<br>     "jp": "温度センサー",<br>     "en": "Temperature Sensor"<br>   }<br>}</pre> | Optional |
+| entityRelations<br>(eR) | JSON Object containing JSON Arrays of JSON Strings | Globally unique identifiers of related entities.<br><br>Identifies relationships between entities. Each relationship is a JSON object with the name specifying the type of relationship, and the value containing an array of URIs specifying the related entities. Relationships are described in more detail in [Section 3](#rel).<br><br>The value of each ID shall be formatted as an [RFC 8141](https://tools.ietf.org/html/rfc8141) URN.<br><br><b>Example 2.3.5</b><pre>{<br>   "entityRelations": {<br>      "child-of": ["urn:uuid:cd9f930e-a3b4-423a-850b-3c81135f0f7e"]<br>   }<br>}</pre> | Optional |
+| extensions<br>(ext) | JSON Object | Contains user-defined fields extending a fragment.<br><br><b>Example 2.3.6</b><pre>{<br>   "extensions": {<br>      "modbus": {<br>         "unitID": "1",<br>         "address": "7036",<br>         "type": "IF32"<br>       }<br>   }<br>}</pre> | Optional |
+
+### <a name="data.value"></a>2.4 Value SNON Fields
+
+Value SNON fragments may also contain the following JSON fields:
+
+| Field&nbsp;Name<br>(Short&nbsp;Name)    | Data Type     | Description   | Mandatory |
+| ------------- | ------------- | ------------- | --------- |
+| valueTime<br>(vT) | JSON Array of JSON Strings | Indication of one or more points in time or durations in time associated with measured values.<br><br>Provides an indication of when values were measured.<br><br>The value of this field shall contain one or more JSON Strings, with the contents of each string corresponding to the time a value was measured, in [ISO 8601](https://www.iso.org/iso-8601-date-and-time-format.html) extended representation date/time format ("YYYY-MM-DDTHH:MM:SS.MMMZ"), or time interval format ("YYYY-MM-DDTHH:MM:SS.MMMZ/PTxx.xxxS").<br><br>When multiple times are included in a value fragment, subsequent valueTimes can be in relative time interval format ("/PTxx.xxxS"). All value array fields shall have the same number of entries, with the order consistent across fields.<br><br><b>Example 2.4.1</b><pre>{<br>   "value": ["10", "11", "12"],<br>   "valueTime": ["2014-08-20T14:32:56Z", "2014-08-20T14:32:57Z/PT1S", "/PT1S"]<br>}</pre> | Mandatory |
+| value<br>(v) | JSON Array of JSON Strings | Indication of one or more values measured from the sensor.<br><br>Provides an indication of a measured value at a given point in time.<br><br>The value of this field shall contain one or more JSON Strings, with the contents of each string corresponding to the type of the sensor. All value array fields shall have the same number of entries, with the order consistent across fields.<br><br>If a min and max are provided, the value represents the average value over the acquisition period specified in the valueTime field.<br><br><b>Example 2.4.2</b><pre>{<br>   "value": ["10"],<br>   "valueTime": ["2014-08-20T14:32:56.125Z"]<br>}</pre> | Mandatory |
+| valueMax<br>(vMax) | JSON Array of JSON Strings | Indication of one or more maximum values measured from the sensor.<br><br>Provides an indication of a maximum measured value during a given interval in time. Min/Max/Average values are typically used when sensor samples a value at a higher rate then is reported, and when the envelope contains important information.<br><br>The value of this field shall contain one or more JSON Strings, with the contents of each string corresponding to the type of the sensor. All value array fields shall have the same number of entries, with the order consistent across fields.<br><br><b>Example 2.4.3</b><pre>{<br>   "value": ["10"],<br>   "valueMax": ["12"],<br>   "valueMin": ["8"],<br>   "valueTime": ["2014-08-20T14:32:56.125Z"]<br>}</pre> | Optional |
+| valueMin<br>(vMin) | JSON Array of JSON Strings | Indication of one or more minimum values measured from the sensor.<br><br>Provides an indication of a minimum measured value during a given interval in time. Min/Max/Average values are typically used when sensor samples a value at a higher rate then is reported, and when the envelope contains important information.<br><br>The value of this field shall contain one or more JSON Strings, with the contents of each string corresponding to the type of the sensor. All value array fields shall have the same number of entries, with the order consistent across fields.<br><br><b>Example 2.4.4</b><pre>{<br>   "value": ["10"],<br>   "valueMax": ["12"],<br>   "valueMin": ["8"],<br>   "valueTime": ["2014-08-20T14:32:56.125Z"]<br>}</pre> | Optional |
+| valueTimeout<br>(vTo) | JSON Array of JSON Strings | Indication of the timeout associated with each value.<br><br>Provides a measure of how long a given value should be considered valid. If the specified time duration since the valueTime has been exceeded, the corresponding value shall no longer be considered valid.<br><br>When present, this field overrides a measureTimeout field.<br><br>The value of this field shall contain one or more JSON Strings, with the contents of each string containing a numeric value measured in seconds.<br><br><b>Example 2.4.5</b><pre>{<br>   "value": ["10"],<br>   "valueTime": ["2014-08-20T14:32:56.125Z"],<br>   "valueTimeout": ["0.1"]<br>}</pre> | Optional  |
+| valueError<br>(vE) | JSON String | Indication that errors are present.<br><br>Provides an indication of errors associated with value or set of values.<br><br>The value of this field shall contain a string describing the error. The contents of the error string is sensor-dependent.<br><br><b>Example 2.4.6</b><pre>{<br>   "value": ["10"],<br>   "valueTime": ["2014-08-20T14:32:56.125Z"],<br>   "valueError": "Out of Calibration"<br>}</pre> | Optional, requires valueTime  |
+
+Value fragments shall contain an "entityID" field and may include an "entityClass" field set to "value".
+
+#### Value Fragment Schema
+
+    "value_fragment": {
+        "anyOf": [ {
+            "type": "object",
+            "required": [
+                "entityID",
+                "value",
+                "valueTime"
+            ],
+            "properties": {
+                "entityID":             { "$ref": "#/definitions/type_id" },
+                "entityClass":          { "type": "string",
+                                          "enum": [ "value" ] },
+                "value":                { "$ref": "#/definitions/type_string_array" },
+                "valueTime":            { "$ref": "#/definitions/type_ISO8601_timeduration_array" },
+                "valueMax":             { "$ref": "#/definitions/type_string_array" },
+                "valueMin":             { "$ref": "#/definitions/type_string_array" },
+                "valueTimeout":         { "$ref": "#/definitions/type_numeric_string" },
+                "valueError":           { "type": "string" },
+                "extensions":           { "$ref": "#/definitions/type_extensions" }
+            },
+            "additionalProperties": false
+        },
+        {
+            "type": "object",
+            "required": [
+                "eID",
+                "v",
+                "vT"
+            ],
+            "properties": {
+                "eID":                  { "$ref": "#/definitions/type_id" },
+                "eC":                   { "type": "string",
+                                          "enum": [ "value" ] },
+                "v":                    { "$ref": "#/definitions/type_string_array" },
+                "vT":                   { "$ref": "#/definitions/type_ISO8601_timeduration_array" },
+                "vMax":                 { "$ref": "#/definitions/type_string_array" },
+                "vMin":                 { "$ref": "#/definitions/type_string_array" },
+                "vTo":                  { "$ref": "#/definitions/type_numeric_string" },
+                "vE":                   { "type": "string" },
+                "ext":                  { "$ref": "#/definitions/type_extensions" }
+            },
+            "additionalProperties": false
+        } ]
+    }
+
+### <a name="data.series"></a>2.5 Series SNON Fields
+
+Series SNON fragments may also contain the following measure JSON fields that will act as a default unless overridden by a measurand:
+
+* measureSpanLow (meSL)
+* measureSpanHigh (meSH)
+* measureDisplayLow (meDL)
+* measureDisplayHigh (meDH)
+* measureDisplayUnit (meDU)
+* measureUpdateRate (meUR)
+* measureTimeout (meTo)
+* measureResolution (meR)
+* measureAccuracy (meAc)
+
+These fields are described in [Section 2.7](#data.measurand).
+
+#### Series Fragment Schema
+
+    "series_fragment": {
+        "anyOf": [ {
+            "type": "object",
+            "required": [
+                "entityID",
+                "entityClass"
+            ],
+            "properties": {
+                "entityID":             { "$ref": "#/definitions/type_id" },
+                "entityClass":          { "type": "string",
+                                          "enum": [ "series" ] },
+                "entityType":           { "$ref": "#/definitions/type_intl_name" },
+                "entityName":           { "$ref": "#/definitions/type_intl_name" },
+                "entityRelations":      { "$ref": "#/definitions/type_relations" },
+                "measureSpanLow":       { "$ref": "#/definitions/type_numeric_string" },
+                "measureSpanHigh":      { "$ref": "#/definitions/type_numeric_string" },
+                "measureDisplayLow":    { "$ref": "#/definitions/type_numeric_string" },
+                "measureDisplayHigh":   { "$ref": "#/definitions/type_numeric_string" },
+                "measureDisplayUnit":   { "$ref": "#/definitions/type_intl_name" },
+                "measureUpdateRate":    { "$ref": "#/definitions/type_numeric_string" },
+                "measureTimeout":       { "$ref": "#/definitions/type_numeric_string" },
+                "measureResolution":    { "$ref": "#/definitions/type_numeric_string" },
+                "measureAccuracy":      { "$ref": "#/definitions/type_numeric_string" },
+                "extensions":           { "$ref": "#/definitions/type_extensions" }
+            },
+            "additionalProperties": false
+        },
+        {
+            "type": "object",
+            "required": [
+                "eID",
+                "eC"
+            ],
+            "properties": {
+                "eID":                  { "$ref": "#/definitions/type_id" },
+                "eC":                   { "type": "string",
+                                          "enum": [ "series" ] },
+                "eT":                   { "$ref": "#/definitions/type_intl_name" },
+                "eN":                   { "$ref": "#/definitions/type_intl_name" },
+                "eR":                   { "$ref": "#/definitions/type_relations" },
+                "meSL":                 { "$ref": "#/definitions/type_numeric_string" },
+                "meSH":                 { "$ref": "#/definitions/type_numeric_string" },
+                "meDL":                 { "$ref": "#/definitions/type_numeric_string" },
+                "meDH":                 { "$ref": "#/definitions/type_numeric_string" },
+                "meDU":                 { "$ref": "#/definitions/type_intl_name" },
+                "meUR":                 { "$ref": "#/definitions/type_numeric_string" },
+                "meTo":                 { "$ref": "#/definitions/type_numeric_string" },
+                "meR":                  { "$ref": "#/definitions/type_numeric_string" },
+                "meAc":                 { "$ref": "#/definitions/type_numeric_string" },
+                "ext":                  { "$ref": "#/definitions/type_extensions" }
+            },
+            "additionalProperties": false
+        } ]
+    }
+
+
+### <a name="data.sensor"></a>2.6 Sensor SNON Fields
+
+Sensor SNON Fragments may also contain the following JSON fields:
+
+| Field&nbsp;Name<br>(Short&nbsp;Name)    | Data Type     | Description   | Mandatory |
+| ------------- | ------------- | ------------- | --------- |
+| sensorTag<br>(sT)     | JSON Object    | Identification tag for the entity.<br><br>The value of this field shall be a string containing the P&ID letters and loop number as defined in [ANSI/ISA-S5.1](https://www.isa.org/isa5-1/).<br><br><b>Example 2.6.1</b><pre>{<br>   "sensorTag": "TT1123"<br>}</pre> | Optional |
+
+#### Sensor Fragment Schema
+
+    "sensor_fragment": {
+        "anyOf": [ {
+            "type": "object",
+            "required": [
+                "entityID",
+                "entityClass"
+            ],
+            "properties": {
+                "entityID":             { "$ref": "#/definitions/type_id" },
+                "entityClass":          { "type": "string",
+                                          "enum": [ "sensor" ] },
+                "entityType":           { "$ref": "#/definitions/type_intl_name" },
+                "entityName":           { "$ref": "#/definitions/type_intl_name" },
+                "entityRelations":      { "$ref": "#/definitions/type_relations" },
+                "sensorTag":            { "type": "string" },
+                "extensions":           { "$ref": "#/definitions/type_extensions" }
+            },
+            "additionalProperties": false
+        },
+        {
+            "type": "object",
+            "required": [
+                "eID",
+                "eC"
+            ],
+            "properties": {
+                "eID":                  { "$ref": "#/definitions/type_id" },
+                "eC":                   { "type": "string",
+                                          "enum": [ "sensor" ] },
+                "eT":                   { "$ref": "#/definitions/type_intl_name" },
+                "eN":                   { "$ref": "#/definitions/type_intl_name" },
+                "eR":                   { "$ref": "#/definitions/type_relations" },
+                "sT":                   { "type": "string" },
+                "ext":                  { "$ref": "#/definitions/type_extensions" }
+            },
+            "additionalProperties": false
+        } ]
+    }
+
+
+
+### <a name="data.measurand"></a>2.7 Measurand SNON Fields
+
+Measurand SNON fragments may also contain the following JSON fields:
+
+| Field&nbsp;Name<br>(Short&nbsp;Name)    | Data Type     | Description   | Mandatory |
+| ------------- | ------------- | ------------- | --------- |
+| measureUnit<br>(meU) | JSON String   | Unit indicator for the value measured by the sensor.<br><br>Identifies what physical or calculated quantity is being measured.<br><br>The value of this field shall be formatted as either:<br>a) an [ISO 80000-1:2009](https://www.iso.org/standard/30669.html) special symbol (or [SI unit symbol](http://www.bipm.org/en/si/si_brochure/)),<br> b) a combination of symbols for units, as defined in 7.2.2 of [ISO 80000-1:2009](https://www.iso.org/standard/30669.html),<br>c) an empty string, representing a unitless value, or,<br>d) a custom (non-SI) value.<br><br>If this field is not present, the default value shall be an empty string.<br><br>NOTE: While SI prefix conversion may be performed for display (e.g. 27.8 m/s -> 100 km/h), SNON measureUnit fields should always specify units without metric prefixes.<br><br><b>Example 2.7.1</b><pre>{<br>   "measureUnit": "m/s"<br>}</pre> | Optional |
+| measureType<br>(meT) | JSON String | Data type indicator for the value measured by the sensor.<br><br>Identifies what data type is stored in the value associated with a measurement.<br><br>The value of this field shall be contain one of the following:<br>a) "enumeration" &ndash; The sensor value shall contain a string representation of an integer, which corresponds to a string specified in the measureLabel field.<br>b) "numeric" &ndash; The sensor value shall contain a string representation of a number,<br>c) "string" &ndash; The sensor value shall consist of a UTF-8 string value, or, <br>d) "url" &ndash; The sensor value shall contain a string representation of a URL (including data URIs as defined in [RFC 2397](https://tools.ietf.org/html/rfc2397)).<br><br>If this field is not present, the default value shall be "numeric".<br><br><b>Example 2.7.2</b><pre>{<br>   "measureType": "numeric"<br>}</pre> | Optional |
+| measureAcquire<br>(meAq) | JSON String   | Data Acquisition indicator for the value measured by the sensor.<br><br>Identifies what method is used by the sensor to acquire a value.<br><br>The value of this field shall be contain one of the following:<br><br>a) "sample" &ndash; The value represents a measurement made at the start of valueTime.<br>b) "count" &ndash; The value represents an increasing count, measured the start of valueTime.<br>c) "triggered" &ndash; The value represents a measurement, captured at the end of valueTime.<br>d) "summary" &ndash; the value represents a summarization of measurements that occurred during the valueTime range.<br>e) "derived" &ndash; The value represents calculations of measurements, valid for the start of valueTime.<br><br>If this field is not present, the default value shall be "sample".<br><br><b>Example 2.7.3</b><pre>{<br>   "measureType": "sample"<br>}</pre> | Optional |
+| measureUnitPrefix<br>(meUP) | JSON Object    | Descriptive Name of the prefix to be displayed before the measured value.<br><br>Provides a set of human-readable prefixes that come before the value measured by the sensor, allowing fragment receivers to display sensor measurements to end users.<br><br>The value of this field shall contain one or more JSON Strings, each with a name specifying the language tag as defined in [RFC 5646](https://tools.ietf.org/html/rfc5646), and a value containing a prefix in that language-region, to be displayed before the value of the measurement. <br><br>A name of "*" is used as a default language-region, as defined in [RFC 4647](https://tools.ietf.org/html/rfc4647).<br><br><b>Example 2.7.4</b><pre>{<br>   "measureUnitPrefix": {<br>     "jp": "摂氏",<br>     "&#42;": ""<br>   }<br>}</pre> | Optional |
+| measureUnitSuffix<br>(meUS) | JSON Object    | Descriptive Name of the suffix to be displayed after the measured value.<br><br>Provides a set of human-readable suffixes that come after the value measured by the sensor, allowing fragment receivers to display sensor measurements to end users.<br><br>The value of this field shall contain one or more JSON Strings, each with a name specifying the language tag as defined in [RFC 5646](https://tools.ietf.org/html/rfc5646), and a value containing a suffix in that language-region, to be displayed before the value of the measurement. <br><br>A name of "*" is used as a default language-region, as defined in [RFC 4647](https://tools.ietf.org/html/rfc4647).<br><br><b>Example 2.7.5</b><pre>{<br>   "measureUnitSuffix": {<br>     "jp": "度",<br>     "en-us": " ℉",<br>     "&#42;": " ℃"<br>   }<br>}</pre> | Optional |
+| measureUnitPrefixEx<br>(meUPx) | JSON Object    | Extended descriptive Name of the prefix to be displayed before the measured value.<br><br>Provides a long-form set of human-readable prefixes that come before the value measured by the sensor, allowing fragment receivers to display sensor measurements to end users.<br><br>The value of this field shall contain one or more JSON Strings, each with a name specifying the language tag as defined in [RFC 5646](https://tools.ietf.org/html/rfc5646), and a value containing a long-form prefix in that language-region, to be displayed before the value of the measurement. <br><br>A name of "*" is used as a default language-region, as defined in [RFC 4647](https://tools.ietf.org/html/rfc4647).<br><br><b>Example 2.7.6</b><pre>{<br>   "measureUnitPrefixEx": {<br>     "jp": "摂氏",<br>     "&#42;": ""<br>   }<br>}</pre> | Optional |
+| measureUnitSuffixEx<br>(meUSx) | JSON Object    | Extended descriptive Name of the suffix to be displayed after the measured value.<br><br>Provides a long-form set of human-readable suffixes that come after the value measured by the sensor, allowing fragment receivers to display sensor measurements to end users.<br><br>The value of this field shall contain one or more JSON Strings, each with a name specifying the language tag as defined in [RFC 5646](https://tools.ietf.org/html/rfc5646), and a value containing a long-form suffix in that language-region, to be displayed before the value of the measurement. <br><br>A name of "*" is used as a default language-region, as defined in [RFC 4647](https://tools.ietf.org/html/rfc4647).<br><br><b>Example 2.7.7</b><pre>{<br>   "measureUnitSuffixEx": {<br>     "jp": "度",<br>     "en-us": " degrees Fahrenheit",<br>     "&#42;": " degrees Celsius"<br>   }<br>}</pre> | Optional |
+| measureLabel<br>(meL) | JSON Object of JSON Objects | Descriptive Name of enumeration values.<br><br>Provides a set of human-readable values corresponding to enumerated values of a sensor of type "enumerated", allowing fragment receivers to display sensor measurements to end users.<br><br>The value of this field shall contain a JSON Object, with each object contained being a JSON Object containing one or more JSON Strings, each with a name specifying the language tag as defined in [RFC 5646](https://tools.ietf.org/html/rfc5646), and a value containing a long-form suffix in that language-region, to be displayed before the value of the measurement. <br><br>A name of "*" is used as a default language-region, as defined in [RFC 4647](https://tools.ietf.org/html/rfc4647).<br><br><b>Example 2.7.8</b><pre>{<br>   "measureLabel": {<br>      "0":{<br>            "jp": "開弁",<br>            "en-us": " Opened Valve"<br>      },<br>      "1":{<br>            "jp": "閉鎖弁",<br>            "en-us": " Closed Valve"<br>      }<br>   }<br>}</pre> | Optional |
+| measureSpanLow<br>(meSL) | JSON String | Indication of the minimum operating value.<br><br>Provides an indication of the lowest operating value where the sensor is rated to be within its normal error band.<br><br>The value of this field shall match the value specified in the sensor's measureType field.<br><br><b>Example 2.7.9</b><pre>{<br>   "measureSpanLow":"-100"<br>}</pre> | Optional |
+| measureSpanHigh<br>(meSH) | JSON String | Indication of the maximum operating value.<br><br>Provides an indication of the highest operating value where the sensor is rated to be within its normal error band.<br><br>The value of this field shall match the value specified in the sensor's measureType field.<br><br><b>Example 2.7.10</b><pre>{<br>   "measureSpanHigh":"100"<br>}</pre> | Optional |
+| measureDisplayLow<br>(meDL) | JSON String | Indication of the minimum value for display purposes.<br><br>Provides an indication of the lowest value the sensor is expected to return during normal operation. This permits a fragment receiver to size charts and other display outputs appropriately.<br><br>The value of this field shall match the value specified in the sensor's measureType field.<br><br><b>Example 2.7.11</b><pre>{<br>   "measureDisplayLow":"0"<br>}</pre> | Optional |
+| measureDisplayHigh<br>(meDH) | JSON String | Indication of the maximum value for display purposes.<br><br>Provides an indication of the highest value the sensor is expected to return during normal operation. This permits a fragment receiver to size charts and other display outputs appropriately.<br><br>The value of this field shall match the value specified in the sensor's measureType field.<br><br><b>Example 2.7.12</b><pre>{<br>   "measureDisplayHigh":"50"<br>}</pre> | Optional |
+| measureDisplayUnit<br>(meDU)     | JSON Object   | Indication of the unit used for display purposes.<br><br>Provides an indication of what unit should be used for display purposes. This permits a specific directive for how a fragment receiver should convert from SI base units.<br><br>The value of this field shall contain one or more JSON Strings, each with a name specifying the language tag as defined in [RFC 5646](https://tools.ietf.org/html/rfc5646), and a value containing either:<br><br>a) a combination of [ISO 80000-1:2009](https://www.iso.org/standard/30669.html) special symbol (or [SI unit symbol](http://www.bipm.org/en/si/si_brochure/)), optionally including SI prefixes,<br> b) an SI prefix, or,<br>c) a custom (non-SI) value.<br><br>A name of "*" is used as a default language-region, as defined in [RFC 4647](https://tools.ietf.org/html/rfc4647).<br><br><b>Example 2.7.13</b><pre>{<br>   "measureUnit": "m/s",<br>   "measureDisplayUnit": {<br>      "en-us":"mile/hr",<br>      "&#42;":"km/hr"<br>   }<br>}</pre> | Optional |
+| measureUpdateRate<br>(meUR) | JSON String | Indication of the maximum rate at which a sensor value will be updated.<br><br>Provides an indication of the shortest interval that a sensor value can be polled to obtain a new reading. This permits a fragment sender to determine the rate at which values should be generated.<br><br>The value of this field shall be a string containing a numeric value measured in seconds.<br><br><b>Example 2.7.14</b><pre>{<br>   "measureUpdateRate":"0.1"<br>}</pre> | Optional |
+| measureTimeout<br>(meTo) | JSON String | Indication of the timeout associated with each measurement.<br><br>If the specified time duration since the valueTime has been exceeded, the corresponding value shall no longer be considered valid.<br><br>The value of this field shall be a string containing a numeric value measured in seconds.<br><br><b>Example 2.7.15</b><pre>{<br>   "measureTimeout":"10"<br>}</pre> | Optional |
+| measureResolution<br>(meR) | JSON String | Indication of the smallest detectable change measurable by the sensor.<br><br>Provides an indication of the smallest detectable change of the value being measured that will result in a different value reading. This permits a fragment sender to determine significant figures.<br><br>The value of this field shall be a string containing a numeric value corresponding to the units defined for the sensor.<br><br><b>Example 2.7.16</b><pre>{<br>   "measureResolution":"0.1"<br>}</pre> | Optional<br><br>Only valid for sensors of type "numeric" |
+| measureAccuracy<br>(meAc) | JSON String | Indication of range of possible measurement error.<br><br>Provides an indication of the largest difference (+/-) expected to exist between the measured value and the actual value. This permits a fragment sender to determine significant figures.<br><br>The value of this field shall be a string containing a positive numeric value corresponding to the units defined for the sensor. Accuracy shall be +/- the specified value.<br><br><b>Example 2.7.17</b><pre>{<br>   "measureAccuracy":"0.1"<br>}</pre> | Optional<br><br>Only valid for sensors of type "numeric" |
+
+#### Measurand Fragment Schema
+
+    "measurand_fragment": {
+        "anyOf": [ {
+            "type": "object",
+            "required": [
+                "entityID",
+                "entityClass"
+            ],
+            "properties": {
+                "entityID":             { "$ref": "#/definitions/type_id" },
+                "entityClass":          { "type": "string",
+                                          "enum": [ "measurand" ] },
+                "entityType":           { "$ref": "#/definitions/type_intl_name" },
+                "entityName":           { "$ref": "#/definitions/type_intl_name" },
+                "entityRelations":      { "$ref": "#/definitions/type_relations" },
+                "measureUnit":          { "type": "string" },
+                "measureType":          { "type": "string" },
+                "measureAcquire":       { "type": "string" },
+                "measureUnitPrefix":    { "$ref": "#/definitions/type_intl_name" },
+                "measureUnitSuffix":    { "$ref": "#/definitions/type_intl_name" },
+                "measureUnitPrefixEx":  { "$ref": "#/definitions/type_intl_name" },
+                "measureUnitSuffixEx":  { "$ref": "#/definitions/type_intl_name" },
+                "measureLabel":         { "$ref": "#/definitions/type_intl_enum" },
+                "measureSpanLow":       { "$ref": "#/definitions/type_numeric_string" },
+                "measureSpanHigh":      { "$ref": "#/definitions/type_numeric_string" },
+                "measureDisplayLow":    { "$ref": "#/definitions/type_numeric_string" },
+                "measureDisplayHigh":   { "$ref": "#/definitions/type_numeric_string" },
+                "measureDisplayUnit":   { "$ref": "#/definitions/type_intl_name" },
+                "measureUpdateRate":    { "$ref": "#/definitions/type_numeric_string" },
+                "measureTimeout":       { "$ref": "#/definitions/type_numeric_string" },
+                "measureResolution":    { "$ref": "#/definitions/type_numeric_string" },
+                "measureAccuracy":      { "$ref": "#/definitions/type_numeric_string" },
+                "extensions":           { "$ref": "#/definitions/type_extensions" }
+            },
+            "additionalProperties": false
+        },
+        {
+            "type": "object",
+            "required": [
+                "eID",
+                "eC"
+            ],
+            "properties": {
+                "eID":                  { "$ref": "#/definitions/type_id" },
+                "eC":                   { "type": "string",
+                                          "enum": [ "measurand" ] },
+                "eT":                   { "$ref": "#/definitions/type_intl_name" },
+                "eN":                   { "$ref": "#/definitions/type_intl_name" },
+                "eR":                   { "$ref": "#/definitions/type_relations" },
+                "meU":                  { "type": "string" },
+                "meT":                  { "type": "string" },
+                "meAq":                 { "type": "string" },
+                "meUP":                 { "$ref": "#/definitions/type_intl_name" },
+                "meUS":                 { "$ref": "#/definitions/type_intl_name" },
+                "meUPx":                { "$ref": "#/definitions/type_intl_name" },
+                "meUSx":                { "$ref": "#/definitions/type_intl_name" },
+                "meL":                  { "$ref": "#/definitions/type_intl_enum" },
+                "meSL":                 { "$ref": "#/definitions/type_numeric_string" },
+                "meSH":                 { "$ref": "#/definitions/type_numeric_string" },
+                "meDL":                 { "$ref": "#/definitions/type_numeric_string" },
+                "meDH":                 { "$ref": "#/definitions/type_numeric_string" },
+                "meDU":                 { "$ref": "#/definitions/type_intl_name" },
+                "meUR":                 { "$ref": "#/definitions/type_numeric_string" },
+                "meTo":                 { "$ref": "#/definitions/type_numeric_string" },
+                "meR":                  { "$ref": "#/definitions/type_numeric_string" },
+                "meAc":                 { "$ref": "#/definitions/type_numeric_string" },
+                "ext":                  { "$ref": "#/definitions/type_extensions" }
+            },
+            "additionalProperties": false
+        } ]
+    }
+
+### <a name="data.device"></a>2.8 Device SNON Fields
+
+Device SNON fragments do not contain any additional series-specific fields.
+
+#### Device Fragment Schema
+
+    "device_fragment": {
+        "anyOf": [ {
+            "type": "object",
+            "required": [
+                "entityID",
+                "entityClass"
+            ],
+            "properties": {
+                "entityID":             { "$ref": "#/definitions/type_id" },
+                "entityClass":          { "type": "string",
+                                          "enum": [ "device" ] },
+                "entityType":           { "$ref": "#/definitions/type_intl_name" },
+                "entityName":           { "$ref": "#/definitions/type_intl_name" },
+                "entityRelations":      { "$ref": "#/definitions/type_relations" },
+                "extensions":           { "$ref": "#/definitions/type_extensions" }
+            },
+            "additionalProperties": false
+        },
+        {
+            "type": "object",
+            "required": [
+                "eID",
+                "eC"
+            ],
+            "properties": {
+                "eID":                  { "$ref": "#/definitions/type_id" },
+                "eC":                   { "type": "string",
+                                          "enum": [ "device" ] },
+                "eT":                   { "$ref": "#/definitions/type_intl_name" },
+                "eN":                   { "$ref": "#/definitions/type_intl_name" },
+                "eR":                   { "$ref": "#/definitions/type_relations" },
+                "ext":                  { "$ref": "#/definitions/type_extensions" }
+            },
+            "additionalProperties": false
+        } ]
+    }
+
+### <a name="data.location"></a>2.9 Location SNON Fields
+
+Location SNON fragments do not contain any additional series-specific fields.
+
+#### Location Fragment Schema
+
+    "location_fragment": {
+        "anyOf": [ {
+            "type": "object",
+            "required": [
+                "entityID",
+                "entityClass"
+            ],
+            "properties": {
+                "entityID":             { "$ref": "#/definitions/type_id" },
+                "entityClass":          { "type": "string",
+                                          "enum": [ "location" ] },
+                "entityType":           { "$ref": "#/definitions/type_intl_name" },
+                "entityName":           { "$ref": "#/definitions/type_intl_name" },
+                "entityRelations":      { "$ref": "#/definitions/type_relations" },
+                "extensions":           { "$ref": "#/definitions/type_extensions" }
+            },
+            "additionalProperties": false
+        },
+        {
+            "type": "object",
+            "required": [
+                "eID",
+                "eC"
+            ],
+            "properties": {
+                "eID":                  { "$ref": "#/definitions/type_id" },
+                "eC":                   { "type": "string",
+                                          "enum": [ "location" ] },
+                "eT":                   { "$ref": "#/definitions/type_intl_name" },
+                "eN":                   { "$ref": "#/definitions/type_intl_name" },
+                "eR":                   { "$ref": "#/definitions/type_relations" },
+                "ext":                  { "$ref": "#/definitions/type_extensions" }
+            },
+            "additionalProperties": false
+        } ]
+    }
+
+
+### <a name="data.rel"></a>2.10 Relationship SNON Fields
+
+Relationship SNON Fragments may also contain the following JSON fields:
+
+| Field&nbsp;Name<br>(Short&nbsp;Name)    | Data Type     | Description   | Mandatory |
+| ------------- | ------------- | ------------- | --------- |
+| relSource<br>(rS) | JSON String | Indicates the source of the relationship.<br><br>The value of this field shall be an entityID.<br><br><b>Example 2.10.1</b><pre>{<br>   "relSource": "urn:urn-5:3b905aa9c63d454d9e8ac30084e7271bc662e88e68e811d9cfe3c73bf62eb9f6:2"<br>}</pre> | Mandatory |
+| relDestination<br>(rD) | JSON String | Indicates the destination of the relationship.<br><br>The value of this field shall be an entityID.<br><br><b>Example 2.10.2</b><pre>{<br>   "relDestination": "urn:uuid:731f0515-078d-48cf-a136-99e57ad21b8b"<br>}</pre> | Mandatory |
+| relType<br>(rT) | JSON String | Indicates the type of relationship.<br><br>The value of this field shall be an string indicating the relationship type (See [section 3](#rel)).<br><br><b>Example 2.10.3</b><pre>{<br>   "reltype": "parent_of"<br>}</pre> | Mandatory |
+
+Relationship objects are a superset of entityRelations.
+
+#### Relationship Fragment Schema
+
+    "relationship_fragment": {
+        "anyOf": [ {
+            "type": "object",
+            "required": [
+                "entityID",
+                "entityClass",
+                "relSource",
+                "relDestination",
+                "relType"
+            ],
+            "properties": {
+                "entityID":             { "$ref": "#/definitions/type_id" },
+                "entityClass":          { "type": "string",
+                                          "enum": [ "relationship" ] },
+                "entityType":           { "$ref": "#/definitions/type_intl_name" },
+                "entityName":           { "$ref": "#/definitions/type_intl_name" },
+                "relSource":            { "$ref": "#/definitions/type_id" },
+                "relDestination":       { "$ref": "#/definitions/type_id" },
+                "relType":              { "type": "string" },
+                "extensions":           { "$ref": "#/definitions/type_extensions" }
+            },
+            "additionalProperties": false
+        },
+        {
+            "type": "object",
+            "required": [
+                "eID",
+                "eC",
+                "rS",
+                "rD",
+                "rT"
+            ],
+            "properties": {
+                "eID":                  { "$ref": "#/definitions/type_id" },
+                "eC":                   { "type": "string",
+                                          "enum": [ "relationship" ] },
+                "eT":                   { "$ref": "#/definitions/type_intl_name" },
+                "eN":                   { "$ref": "#/definitions/type_intl_name" },
+                "rS":                   { "$ref": "#/definitions/type_id" },
+                "rD":                   { "$ref": "#/definitions/type_id" },
+                "rT":                   { "type": "string" },
+                "ext":                  { "$ref": "#/definitions/type_extensions" }
+            },
+            "additionalProperties": false
+        } ]
+    }
+
+
+<hr>
+
+## 3 <a name="rel"></a>SNON Entity Relationships
+
+### 3.1 <a name="rel.model"></a>Relationship Model
+
+The relationship model between entities is defined according to the following model:
+
+<center>
+![SNON Relationships](images/snon_3_rel_model.png)
+<br>
+Figure 3 - SNON Relationship Model
+<br><br></center>
+
+Relationships are expressed in relationship fragments, or in entityRelations fields within a fragment. With entityRelations, the relSource is the entityID of the fragment the entityRelations is contained with.
+
+#### Example 3.1.1 - Equivalent Relationships in SNON fragments
+
+    [
+        {
+            "entityID":"urn:uuid:13818320-a6f9-4caa-8660-d39ab5bdb6aa",
+            "entityClass": "device",
+            "entityRelations": {
+                "child_of": [ "urn:uuid:ca343afd-bc22-4188-b58c-7ab624a800cd" ]
+            }
+        }
+    ]
+
+    [
+        {
+            "entityID":"urn:uuid:c0f44d6e-ad62-4f4d-9518-6c778fb1522d",
+            "entityClass": "relationship",
+            "relSource": "urn:uuid:13818320-a6f9-4caa-8660-d39ab5bdb6aa",
+            "relDestination": "urn:uuid:ca343afd-bc22-4188-b58c-7ab624a800cd",
+            "relType": "child_of"
+        }
+    ]
+
+Relationship fragments (new in SNON 3) enable more expressive relationships compared to the entityRelations approach:
+
+1. Relationships can be created after the relSource has been created
+1. Relationships can be created by different system components than the device that created the relSource
+1. Relationships can be created with a relSource or relDestination that is itself a relationship
+
+
+### <a name="rel.general"></a>3.2 General Relationships
+
+The following general relationships are defined as part of SNON:
+
+| relType | Description   |
+| ------------- | ------------- |
+| "child_of" | Defines hierarchies between entities.<br><br>Figure 4 shows how child_of relationships can be used to associate series with sensors, and sensors with devices:<center>![SNON child_of](images/snon_3_rel_child_of_1.png)<br>Figure 4 - SNON "child_of" Relationships between series, sensors and devices<br><br></center><br><br>Figure 5 shows how child_of relationships can be used to associate devices with larger devices:<center>![SNON child_of](images/snon_3_rel_child_of_2.png)<br>Figure 5 - SNON "child_of" Relationships between devices<br><br></center><br><br>Figure 6 shows how child_of relationships can be used to associate devices with locations, and locations with locations:<center>![SNON child_of](images/snon_3_rel_child_of_3.png)<br>Figure 6 - SNON "child_of" Relationships between devices and locations<br><br></center> |
+| "measurand" | Indicates what measured quantity a given sensor is measuring.<br><br>Figure 7 shows how measurand relationships can be used to indicate which measured quantity is being measured by a given sensor:<center>![SNON measurand](images/snon_3_rel_measurand_1.png)<br>Figure 7 - SNON "measurand" Relationships between devices<br><br></center> |
+| "powered_by" | Defines power supply relationships between entities.Figure 8 shows how powered_by relationships can be used to indicate which devices are supplied power by which devices:<center>![SNON powered_by](images/snon_3_rel_powered_by_1.png)<br>Figure 8 - SNON "powered_by" Relationships between devices<br><br></center> |
+| "timesync_by" | Defines time synchronization relationships between entities.<br><br>Figure 9 shows how timesync_by relationships can be used to indicate which devices are supplied time synchronzation by which devices:<center>![SNON timesync_by](images/snon_3_rel_timesync_by_1.png)<br>Figure 9 - SNON "timesync_by" Relationships between devices<br><br></center> |
+| "connected_to" | Defines network connectivity relationships between entities.<br><br>Figure 10 shows how connected_to relationships can be used to indicate which devices are connected to which devices:<center>![SNON connected_to](images/snon_3_rel_connected_to_1.png)<br>Figure 10 - SNON "connected_to" Relationships between devices<br><br></center> |
+| "located_at" | Defines the geographic of a given location.<br><br>Figure 11 shows how located_at relationships can be used to indicate a series that indicate the location of a device:<center>![SNON located_at](images/snon_3_rel_located_at_1.png)<br>Figure 11 - SNON "located_at" Relationships for devices<br><br></center> |
+| "measured_from" | Defines that devices or relationships a given sensor is measuring.<br><br>Figure 12 shows how measured_from relationships can be used to indicate that which sensors measure which devices or relationships:<center>![SNON measured_from](images/snon_3_rel_measured_from_1.png)<br>Figure 12 - SNON "measured_from" Relationships between devices<br><br></center> |
+
+### <a name="rel.series"></a>3.3 Related Series Relationships
+
+The following series to series relationships are defined as part of SNON:
+
+| relType | Description   |
+| ------------- | ------------- |
+| "health" | Indicates sensor health. Each "health" relationship indicates that the health of a specific series is indicated by a second series.<br><br>Figure 13 shows an example of a "health" relationship:<center>![SNON Health Relationship](images/snon_3_rel_health_1.png)<br>Figure 13 - SNON "health" Relationships<br><br></center> |
+| "setpoint" | Indicates sensor setpoint. Each "setpoint" relationship indicates that the desired value/range of a specific series is indicated by a second series.<br><br>Figure 14 shows an example of a "setpoint" relationship:<center>![SNON Health Relationship](images/snon_3_rel_setpoint_1.png)<br>Figure 14 - SNON "setpoint" Relationships<br><br></center> |
+| "alarms" | Indicates sensor alarms. Each "alarms" relationship indicates that the alarms threshold value/range of a specific series is indicated by a second series.<br><br>Figure 15 shows an example of two "alarms" relationships:<center>![SNON Alarms Relationship](images/snon_3_rel_alarms_1.png)<br>Figure 15 - SNON "alarms" Relationships<br><br></center> |
+| "alarm_inhibit" | Indicates that sensor alarms are to be inhibit. Each "alarm_inhibit" relationship indicates that any alarms for a specific series should be inhibited as indicated by a second series.<br><br>Figure 16 shows an example of an "alarm_inhibit" relationship:<center>![SNON Alarm Inhibit Relationship](images/snon_3_rel_alarm_inhibit_1.png)<br>Figure 16 - SNON "alarm_inhibit" Relationships<br><br></center> |
+| "indeterminate" | Indicates sensor indeterminacy. Each "indeterminate" relationship indicates that the indeterminacy of a specific series is indicated by a second series.<br><br>Figure 17 shows an example of an "indeterminate" relationship:<center>![SNON Indeterminate Relationship](images/snon_3_rel_indeterminate_1.png)<br>Figure 17 - SNON "indeterminate" Relationships<br><br></center> |
+| "flag" | Indicates unreliable sensor measurements that should not be included in aggregated values/statistical analysis. Each "flag" relationship indicates that the flag status of a specific series is indicated by a second series.<br><br>Figure 18 shows an example of an "flag" relationship:<center>![SNON Flag Relationship](images/snon_3_rel_flag_1.png)<br>Figure 18 - SNON "flag" Relationships<br><br></center> |
+
+### <a name="rel.custom"></a>3.4 Custom Relationships
+
+Custom relationships can be defined as part of an SNON implementation. For example, a custom "interrupts" relationship can associate a device with a relationship between two other devices:
+
+| relType | Description   |
+| ------------- | ------------- |
+| "interrupts" | This relationship indicates that a "powered_by" relationship is conditional.<br><br>Figure 19 shows how interrupts relationships can be used to indicate that power supplied to a device can be interrupted by a second device:<center>![SNON interrupts](images/snon_3_rel_interrupts_1.png)<br>Figure 19 - SNON "interrupts" Relationships between devices<br><br></center> |
+
+
+<hr>
+
+## <a name="examples"></a>4 SNON Examples
+
+#### Example 4.1: A value fragment representing a single measured value:
+
+    [
+        {
+            "entityID": "urn:uuid:e129c1d6-0ac9-474a-948e-813ff3dc4e31",
+            "value" : ["29.3"],
+            "valueTime" : ["2014-08-20T14:32:46.125Z"]
+        }
+    ]
+
+#### Example 4.2: Compact form of Example 4.1:
+
+    [{"eID":"urn:uuid:1635a44f-b770-4418-8f05-e721823e8e41","v":["29.3"],"vT":["2014-08-20T14:32:56.125Z"]}]
+
+#### Example 4.3: A value fragment representing two values, measured at different times:
+
+    [
+        {
+            "entityID": "urn:uuid:e129c1d6-0ac9-474a-948e-813ff3dc4e31",
+            "value" : ["29.3", "30.3"],
+            "valueTime" : ["2014-08-20T14:32:56.125Z", "2014-08-20T14:33:06.125Z"]
+        }
+    ]
+
+#### Example 4.4: A value fragment representing two values, with the second time expressed as a duration since the first time:
+
+    [
+        {
+            "entityID": "urn:uuid:e129c1d6-0ac9-474a-948e-813ff3dc4e31",
+            "value" : ["29.3", "30.3"],
+            "valueTime" : ["2014-08-20T14:32:56.125Z", "/PT10S"]
+        }
+    ]
+
+#### Example 4.5: A value fragment representing a value with an associated duration, rather than a point in time:
+
+    [
+        {
+            "entityID": "urn:uuid:e129c1d6-0ac9-474a-948e-813ff3dc4e31",
+            "value" : ["29.3"],
+            "valueTime" : ["2014-08-20T14:32:56.125Z/PT10S"]
+        }
+    ]
+
+#### Example 4.6: A value fragment representing a value with minimum and maximum:
+
+    [
+        {
+            "entityID": "urn:uuid:e129c1d6-0ac9-474a-948e-813ff3dc4e31",
+            "value" : ["29.3"],
+            "valueMin" : ["33.2"],
+            "valueMax" : ["28.1"],
+            "valueTime" : ["2014-08-20T14:32:56.125Z"]
+        }
+    ]
+
+#### Example 4.7: Two value fragments for two different sensors:
+
+    [
+        {
+            "entityID": "urn:uuid:e129c1d6-0ac9-474a-948e-813ff3dc4e31",
+            "value" : ["29.3"],
+            "valueTime" : ["2014-08-20T14:32:56.125Z"]
+        },
+        {
+            "entityID": "urn:uuid:322ea74e-d914-44be-a95f-bb97b60b140b",
+            "value" : ["-102.2"],
+            "valueTime" : ["2014-08-20T14:32:56.125Z"]
+        }
+    ]
+
+#### Example 4.8: A series fragment representing a collection of value fragments, and linking them to a device and a measurand:
+
+    [
+        {
+            "entityID": "urn:uuid:e129c1d6-0ac9-474a-948e-813ff3dc4e31",
+            "entityClass": "series",
+            "entityName": { "*": "L1-E Voltage" },
+            "entityRelations": {
+              "child_of": [ "urn:uuid:188b39c5-0b90-4850-b3cd-38f52558ca6f" ],
+              "measurand": [ "urn:uuid:866f4a0d-62cc-4324-bff1-b682a806df81" ]
+            }
+        }
+    ]
+
+#### Example 4.9: A measurand fragment representing the value quantity of the series in Example 4.8:
+
+    [
+        {
+            "entityID": "urn:uuid:866f4a0d-62cc-4324-bff1-b682a806df81",
+            "entityClass": "measurand",
+            "entityName": { "*": "120 VAC Nominal Voltage" },
+            "measureUnit": "V",
+            "measureType": "numeric",
+            "measureAcquire": "sample",
+            "measureDisplayUnit": { "*": "Volts" },
+            "measureUpdateRate": "2",
+            "measureTimeout": "5",
+            "measureDisplayLow": "110",
+            "measureDisplayHigh": "130"
+        }
+    ]
+
+#### Example 4.10: A sensor fragment associated with the representing the series in Example 4.8:
+
+    [
+        {
+            "entityID": "urn:uuid:188b39c5-0b90-4850-b3cd-38f52558ca6f",
+            "entityClass": "sensor",
+            "entityName": { "*": "3 Phase Voltage" },
+            "entityRelations": {
+              "child_of": [ "urn:uuid:a8c148df-00a1-40db-a833-7e1f53bc9ba0" ]
+            }
+        }
+    ]
+
+#### Example 4.11: A device fragment associated with the sensor the series in Example 4.9:
+
+    [
+        {
+            "entityID": "urn:uuid:a8c148df-00a1-40db-a833-7e1f53bc9ba0",
+            "entityClass": "device",
+            "entityName": { "*": "Power Meter" },
+            "entityRelations": {
+              "child_of": [ "urn:uuid:e66dad18-8914-4126-39f8-1b786451edcf" ]
+            }
+        }
+    ]
+
+#### Example 4.12: A location fragment associated with the device the series in Example 4.9:
+
+    [
+        {
+            "entityID": "urn:uuid:e66dad18-8914-4126-39f8-1b786451edcf",
+            "entityClass": "location",
+            "entityName": { "*": "L113" }
+        }
+    ]
+
+
+<hr>
+
+## <a name="schema"></a>5 SNON Schema
+
+SNON fragments can be validated using following schema:
+
+http://snon.org/v3/snon-schema.json
+
+The following constraints are not validated by this schema, and shall be validated by the SNON receiver:
+
+* Equal number of array items in valueTime, value, valueMax, valueMin and valueTimeout
+* First item in valueTime shall be an ISO 8601 time (subsequent items may be an ISO 8601 duration)
+* If there is a valueTime, at least one of value, valueMax or valueMin shall be present
+* Contents of value, valueMax and valueMin shall correspond to resolved measureType
+* Validity of SNON fragments contained within a JWS "payload" or JWE "ciphertext" field
+
+<hr>
+
+## <a name="security"></a>6 SNON Security
+
+### <a name="security.encryption"></a>6.1 Encryption and Signing
+
+Sensor data often must be encrypted to protect confidentiality, and signed to protect integrity and demonstrate the authenticity of the source of the data. SNON specifies the use of JSON Object Signing and Encryption (JOSE) as described in [RFC 7516](https://tools.ietf.org/html/rfc7516) and [RFC 7515](https://tools.ietf.org/html/rfc7515), although other encryption and signing standards may also be used.
+
+An SNON collection shall be used as the plaintext, and JWE or JWS JSON Serialization shall be used for the encrypted or signed representation, as shown in the below example:
+
+#### Example 6.1.1: A collection of SNON fragments to be protected:
+
+    [{"entityID":"urn:uuid:fa164ee2-f1b7-43ee-8202-e61bc005db2b","value":["1"],"valueTime":["2017-11-29T03:32:03.752Z"]},{"entityID":"urn:uuid:c4c0b0b6-f1c5-4695-9370-d925f8370c07","value":["0"],"valueTime":["2017-11-29T03:32:03.752Z"]},{"entityID":"urn:uuid:d90526a1-4e62-493e-870c-6216216a03c8","value":["0"],"valueTime":["2017-11-29T03:32:03.752Z"]},{"entityID":"urn:uuid:12b976ea-4867-42b1-bcc6-f6b1d5e938e7","value":["0"],"valueTime":["2017-11-29T03:32:03.752Z"]}]
+
+#### Example 6.1.2: JWE representation when encrypted using RSA v1.5, according to [RFC 7520](https://tools.ietf.org/html/rfc7520#section-5.1):
+
+    [{"tag":"5DlAaLHKrg5JBCh604TtfQ","protected":"eyJhbGciOiJSU0ExXzUiLCJlbmMiOiJBMTI4R0NNIn0","iv":"QIuWxaOOwgIfw6oo","ciphertext":"fwk4KeCiC6rItJ_TD5kn7ymRn7eX-Ckqi0k3N18sEsksF39f2KBezt609IeZQuIqxFBheeLWucwuWa-tpYiWv-zDVUkQ-AhDNwdzo1tPevLOiUytU2NkCjK0uX6yazdaBHxVXFUbwa1HDQ_9-8H_wbpF1pPMrs5kBXt2cHUBdjpTopSfn0Q_rD8iHgz0s7eyMjWjSGqM5Fhg7T79qMwvRtqlyWIuqHVR40U2Gmhk4gy9VOXomq_P7qHeYB507zlAAxggsbYSJvwq6biluilqW5lPbDCR9MSsWjYFggSPr_aGDw6VN-_kXjkVvnBqRkq1B2AU6aKwD47CuBYSCBJDqcHMhKdwQmJ_M4xyg4k0EYl2iwEd7UDKkylzlxi0kfQ4sClW6DHyc_tiymT1ntPkL0l5cerK47kr8CarmJyRCWlQk_kasXr9AXsB9w6mu7obXzdX80FBQJmjzgXYhPC_mcVj6gKQNIyXoFIhlr7ZIEKnYRAwddvtk04Y5amCgBw0sDpS1j-GDimGmZ3iVCV4wsLeih0Ybv5oEqbgE3HiOteLl-8Q4fqP034rTtgNfT0ZxkmnybZyres1C3hwrmfmu-Z1srZ5HsIQuOqovhFE_68i","encrypted_key":"fCeHnQCXO5KqBeYaoqoJ6iFuVTHRcvhh6p7k5LrS6iA3f9XhExjLybggze8v_QpJzLoVXbD31aT1uUTiAyQ93GzsswbMR1X7jWeZnehX8cUbccjkhW2udoXYHe1Du-QibCBgc2K-Psp2Mt17Wg1rqmgGkJ5R36V_uOyBKthY_8AbXabzhgGN9H-A8WwfD6-iB69WjeLrHlmE0psn6jF07cPNzFV2j8rgaED6ejULCE54y3qh6f-9AAMdNH1G2GyjYBhbEg2rSJC80-q95prpnscjUKrNspdV8QzTlg1_AVBEqOqLvEAwWschDMgIFU-Y1HWWSm1JeftxpHfERCySXQ"}]
+
+#### Example 6.1.3: JWS representation when signed using RSA v1.5, according to [RFC 7520](https://tools.ietf.org/html/rfc7520#section-4.1):
+
+    [{"protected":"eyJhbGciOiJSUzI1NiJ9","signature":"EyRkR84B0GJiOtVETZI6tj2biUJzACY2MBcggz3NWu8uCm5FWYfndwJw0pI7ouGaAhpgre3YmK1XoFZhWDFlrPBAx5vKaAsiqIGPvaNX3PTjnw4auEaETSraW5bT1Zg9ZOCGg3o6jwWVVjQecGevZulqfCiEe3bKV48cRHu4WOQG_PoqYdHC4Jw1ugOgpiqCqzaRi34Fek2h3lisufD5dFBJG36UZStYfpSNComfbdhNxe-zQhl42hyE_SG_qUIIHVFmKCOiSLJMPM3TWXKKFWL-B3jNC1Gx79c0mPgfncuXZUCgK8YhD7qOlyR-HXtwdzJ2z7lja186uzdoTnoV9w","header":{"kid":"urn:uuid:bd8dd740-ccd9-4e80-aae9-f1c9ebea754f"},"payload":"W3siZW50aXR5SUQiOiJ1cm46dXVpZDpmYTE2NGVlMi1mMWI3LTQzZWUtODIwMi1lNjFiYzAwNWRiMmIiLCJ2YWx1ZSI6WyIxIl0sInZhbHVlVGltZSI6WyIyMDE3LTExLTI5VDAzOjMyOjAzLjc1MloiXX0seyJlbnRpdHlJRCI6InVybjp1dWlkOmM0YzBiMGI2LWYxYzUtNDY5NS05MzcwLWQ5MjVmODM3MGMwNyIsInZhbHVlIjpbIjAiXSwidmFsdWVUaW1lIjpbIjIwMTctMTEtMjlUMDM6MzI6MDMuNzUyWiJdfSx7ImVudGl0eUlEIjoidXJuOnV1aWQ6ZDkwNTI2YTEtNGU2Mi00OTNlLTg3MGMtNjIxNjIxNmEwM2M4IiwidmFsdWUiOlsiMCJdLCJ2YWx1ZVRpbWUiOlsiMjAxNy0xMS0yOVQwMzozMjowMy43NTJaIl19LHsiZW50aXR5SUQiOiJ1cm46dXVpZDoxMmI5NzZlYS00ODY3LTQyYjEtYmNjNi1mNmIxZDVlOTM4ZTciLCJ2YWx1ZSI6WyIwIl0sInZhbHVlVGltZSI6WyIyMDE3LTExLTI5VDAzOjMyOjAzLjc1MloiXX1d"}]
+
+Nesting of signatures and encryption is defined in section 6 of [RFC 7520](https://tools.ietf.org/html/rfc7520#section-6).
+
+When traversing relationships, it is important to verify the signature of each fragment in the chain.
+
+If sensor IDs are used as MQTT topic names, it is strongly recommended that these be opaque (or hashes) to ensure that information is not leaked. This is why the use of hierarchical MQTT topic names are not recommended, as this will leak information about relationships between sensors.
+
+### <a name="security.pki"></a>6.2 PKI
+
+A common problem in sensor network security is secure enrollment, where a semi-trusted sensor needs to securely establish it's identity to a trusted processing system or repository over an untrusted network. SNON can be used to simplify this problem by treating device public keys as sensor values.
+
+Assume the following:
+
+1. A sensor network platform has a trusted CA which can be used to issue and verify certificates associated with remote sensor devices
+2. When a new sensor device is being deployed, a new certificate/private key is generated for that sensor device
+3. The private key is held by the sensor device, and the public certificate is published as a sensor value ("certificate sensor value fragment")
+
+When the sensor device first connects to the sensor network platform, it sends it's public certificate as a signed value fragment. The sensor network platform can verify that the sensor device's public certificate is signed by the CA certificate, and that the signature is valid.
+
+This allows the sensor network platform to determine that the sensor device posesses a valid certificate, signed by the trusted CA, and that there have been no alterations while traversing the untrusted network, as an attacker cannot undetectably alter the data without possessing the sensor device's assigned private key.
+
+#### Example 6.2.1: A series and value fragment describing the public certificate of a sensor:
+
+    [
+        {
+            "entityID": "urn:uuid:338a889f-f00b-400b-9968-76ca5726ad00",
+            "entityClass": "series",
+            "entityName": { "*": "Public Key" },
+            "entityRelations": {
+                "child_of": [ "urn:uuid:3ca41441-820a-479a-84bd-af5ffdafeb09" ]
+            }
+        },
+        {
+            "entityID": "urn:uuid:338a889f-f00b-400b-9968-76ca5726ad00",
+            "value": [
+                "data:application/x-pem-file;base64,LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSUU1ekNDQXMrZ0F3SUJBZ0lDRUFBd0RRWUpLb1pJaHZjTkFRRUxCUUF3VmpFTE1Ba0dBMVVFQmhNQ1EwRXgKQ3pBSkJnTlZCQWdNQWtKRE1Rb3dDQVlEVlFRSERBRWdNUTB3Q3dZRFZRUUtEQVJUVGs5T01RMHdDd1lEVlFRTApEQVJFWlcxdk1SQXdEZ1lEVlFRRERBZFRUazlPSUVOQk1CNFhEVEl4TURFd016RTNNREl6T1ZvWERUSXlNREl3Ck5URTNNREl6T1Zvd1R6RUxNQWtHQTFVRUJoTUNRMEV4Q3pBSkJnTlZCQWdNQWtKRE1RMHdDd1lEVlFRS0RBUlQKVGs5T01RMHdDd1lEVlFRTERBUkVaVzF2TVJVd0V3WURWUVFEREF4VFRrOU9JRVY0WVcxd2JHVXdnZ0VpTUEwRwpDU3FHU0liM0RRRUJBUVVBQTRJQkR3QXdnZ0VLQW9JQkFRQyttL05FOUh3c1ZEUVltZEtSVlR4NXBCK1NQMERoCjk0LzIwVlNqeWxiZDgxYStHVnppUXJ4YVJLMGhIbnNyTkUzbDRFdFZUZzlTeGR3dm54TUQxcjl1NEtKejErdVQKWndWLzVJOEpmaVJWM1hwNERCdjVOUUNTcGRZTUl4Z0k0cXNHRkhrRExKd1k4YUQzOFRoZ1VIMnFIQ3RVa3ZqMgpaejJ1bmw0MmxnSlFFc0xNNTZ2eTBBZ2srWlBwc1dRL3g3aWZ3UkFNd29EWDBuMnhnU1BNOUw1NUUvNzNDN1RQCnlzK2FNVk1OakkzckJ4V3paQzVmSGh1dS9mZ2pDRVhhdW91ZWM4MXI1OEN5Z1FYOWhxMTlmTnI5WCtpZUc2dWkKYkcwcG50WlpsYmNUY3Z1bjJVdWlNeHhVRnczRFNoUElBdS9GMHNTSDhvenJsSERFelZ2ZUZ5VDNBZ01CQUFHagpnY1V3Z2NJd0NRWURWUjBUQkFJd0FEQVJCZ2xnaGtnQmh2aENBUUVFQkFNQ0JhQXdNd1lKWUlaSUFZYjRRZ0VOCkJDWVdKRTl3Wlc1VFUwd2dSMlZ1WlhKaGRHVmtJRU5zYVdWdWRDQkRaWEowYVdacFkyRjBaVEFkQmdOVkhRNEUKRmdRVTZYN1BWNGcvMkROODgzeGMzMlVFQ0Y3ckJBQXdId1lEVlIwakJCZ3dGb0FVM2tBbXYzVElPakRzbFJ1NApxSW5FMllkd0cwZ3dEZ1lEVlIwUEFRSC9CQVFEQWdYZ01CMEdBMVVkSlFRV01CUUdDQ3NHQVFVRkJ3TUNCZ2dyCkJnRUZCUWNEQkRBTkJna3Foa2lHOXcwQkFRc0ZBQU9DQWdFQUJWbm9kdklacWpBcVVUcXJZQkdhQzB2NWQ0ZlAKTkluYU1pY3N6T3ppbUw2SjhlYTNhY016Q2tIcGVkUldydG1BdjZUdWdhTmI3NDVmdVFMODk5VzJTdjduZWk4VgptRlBTUTdUNmc4SFpraXVvekVHRlZFbGx1RDNQbUY0NFBJeFhjZnJRVHZ5c3hSaDhpNkpiQi9neVo3bkdHNll3CkJSR1B6NUVudDdjai9QSjBSaWhrTEVnM09md2FYUUtQT2ZlNmhMdmFZVGxSejFPaHIrUWNxRDZiL1pSK0o0aE4KeUJUT2l1WUlMb2c5Q0VhaUVmOThiQzZpb0Z2NVBBTlk4dCtnZjZzN1NtMFI3M0JSZG5TUHJtUHlxK05YZDVvRQpvV1J3d2ZmaVpFNUJheDNIZmt1L1pjV1JyZ1dLRFhDOHdDZ0hvSHpPQVBWTVdKSXc2MDVWN01qUkg5L3ViTEQ3CjNGN2FDaDlLK2Vtb29sOW9iZkJWeW9NdUREdUZZd3NwTFdsWjlSM0FmL3gxV0I3N3RrNjlXMEFoanVJTGFyaGUKWFprTXZ3WEptSGl5QzA5SWZYK1ZlNnNoM09vN0x6L2EwQ2hudHRNaGx0VmdtOXd3YVZNV1JEQ3NhSUhhNmh0OQpsZlptZ3pGWHV3SGpJOCtjcWpHVm8vbHZ3NFl3RnphMG5WQVZpWm1tRE00UW5vMzdjamQydFpwUEdyVlhsRDJOCmJRMFpwNmxHdEVtTjgwRllqeDhOdTUxbnYzcDJDQStPSWZ5bXZIbmNON2puWkdDWXRZWjhMaVNoTDdlYS82YVQKSlZSbWRoTkdlSmNKSlZzVHJpOHNqYitJdmZNQStnNUhmY0xjQ0pxd3NtK0twQXVDTkN5UHMvdi8yeG54VFlzeApob2lYSnZGNnJYS2lnY2s9Ci0tLS0tRU5EIENFUlRJRklDQVRFLS0tLS0K"
+            ],
+            "valueTime": [ "2021-01-03T17:08:57.252Z" ]
+        }
+    ]
+
+
+<hr>
+
+## <a name="encapsulation"></a>7 SNON Encapsulation
+
+The Cloud Native Computing Foundation (CNCF) [CloudEvents standard](https://github.com/cloudevents/spec/blob/v1.0.1/spec.md) provides a standard way to connect systems where the change of state in one system causes code to execute in another system.
+
+When used to encapsulate an SNON fragment, the following CloudEvents are used.
+
+| Field&nbsp;Name    | Data Type     | Description   | Mandatory |
+| ------------- | ------------- | ------------- | --------- |
+| specversion | JSON String | The version of the CloudEvents specification which the event uses. This enables the interpretation of the context. Compliant event producers shall use the value "1.0". | Mandatory |
+| type | JSON String | Type of occurrence which has happened.<br><br>Shall be set to the value "org.snon.v3". | Mandatory |
+| schemaurl | JSON Objects | A link to the schema that the data attribute adheres to.<br><br>Shall be set to the value "http://www.snon.org/v3/snon-schema.json". | Optional |
+| source | JSON String | Identifies the context in which an event happened.<br><br>Shall be set to the entityID of the device that is sending the event. | Mandatory |
+| id | JSON String | Identifies the event.<br><br>Shall be set to SHA-256 hash of the SNON fragment in URN-5 format. | Mandatory |
+| subject | JSON String | This describes the subject of the event in the context of the event producer (identified by source).<br><br>If used, shall be set to entityID specified in the encapsulated SNON fragment. | Optional |
+| time | JSON String | Timestamp of when the event happened.<br><br>Shall be set to the time the event is generated. | Optional |
+| data | JSON Object | The event payload.<br><br>Shall be set to the SNON Fragment. | Mandatory |
+
+#### Example 7.1: An example of an SNON fragment encapsulated in a CloudEvent:
+
+    {
+        "specversion": "1.0",
+        "type": "org.snon.v3",
+        "schemaurl": "http://www.snon.org/v3/snon-schema.json",
+        "source": "urn:uuid:407ec909-2519-4a2a-980b-ee75a47020ad",
+        "id": "urn:urn-5:2b03a45c2e79db08f4f4f74bcd429bb62662974640fe987a2dbd773468ffd5ad",
+        "time": "2014-08-20T14:34:56.125Z",
+        "data" : {
+            "entityID": "urn:uuid:1635a44f-b770-4418-8f05-e721823e8e41",
+            "value" : ["29.3"],
+            "valueTime" : ["2014-08-20T14:32:46.125Z"]
+        }
+    }
+
+
+<hr>
+
+## <a name="license"></a>8 SNON License
+
+Clear BSD License
+
+Copyright (c) – 2021, NetApp, Inc.  All rights reserved. 
+    
+Redistribution and use in source and binary forms, with or without modification, are
+permitted (subject to the limitations in the disclaimer below) provided that the
+following conditions are met: 
+
+* Redistributions of source code must retain the above copyright notice, this
+  list of conditions and the following disclaimer. 
+* Redistributions in binary form must reproduce the above copyright notice, this
+  list of conditions and the following disclaimer in the documentation and/or
+  other materials provided with the distribution. 
+* Neither the name of NetApp, Inc. nor the names of its contributors may be used
+  to endorse or promote products derived from this software without specific prior
+  written permission. 
+
+NO EXPRESS OR IMPLIED LICENSES TO ANY PARTY'S PATENT RIGHTS ARE GRANTED BY THIS LICENSE.
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY
+EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL
+THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT,
+STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF
+THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+<hr>
+
+## <a name="changelog"></a>9 SNON Changelog
+
+### SNON 3.0.1 2021-01-12
+
+* Allow some measurement fields in series fragment (overridden if in measurand)
+
+### SNON 3.0 2020-12-27
+
+Non-backward compatible changes:
+
+* Retired SNON messages
+* Retired precedentID
+* Added series fragments and measurand fragments to replace precedentID
+* entityID now mandatory
+* entityTag replaced with sensorTag
+* Retired derived_from relationship
+
+Backward compatible changes:
+
+* Updated CloudEvents spec reference to version 1.0.1
+* Added relationship fragments
+* Terms and definitions now follow [ISO 80000-1:2009](https://www.iso.org/standard/30669.html) and [ISO/IEC Guide 99:2007](https://www.iso.org/obp/ui/#iso:std:iso-iec:guide:99:ed-1:v2:en)
+* Added provenance extension
+
+### [SNON 2.1 2019-08-15](v2.1/index.html)
+
+* Added encapsulation guidance for CNCF [CloudEvents](https://github.com/cloudevents/spec/blob/v1.0.1/spec.md)
+* Added Entity Tag for ISA-5.1 naming conventions
+
+### [SNON 2.0 2017-11-28](v2/index.html)
+
+* Added JSON schema
+* Specified where user-defined fields are allowed
+* Relaxation of field restrictions to improve linked messages
+* SNON Messages now can contain multiple SNON Fragments 
+* sensorHierarchy deprecated. Replaced by deviceID and sensorRelations/deviceRelations
+* valueUncertainty, valueSequence, valueSession and valueHealth deprecated
+* location field deprecated, replace with sensorRelations/deviceRelations
+* Relations added for thresholds, setpoints, alarms, inhibit, indeterminate and flags
+* Added Sensor Catalog use cases
+* Internationalization support
+
+### [SNON 0.3 2015-08-04](v1/index.html)
+
+* Added additional detail on how to use SNON with MQTT
+* Retired messageHash and messageSignature in favor of [JOSE](https://tools.ietf.org/html/rfc7520)
+* Addition of field short names for low-resource platforms
+* Additional examples added
+
+### SNON 0.2 2015-07-05
+
+* Addition of valueTimeout and valueSequence fields
+* Clarification of measureUnit and measureLabel fields
+
+### SNON 0.1 2014-09-24
+
+Please report errors, suggestions, etc, at https://github.com/dslik/snon-spec
+
+</xmp>
+
+<script src="../strapdown/strapdown.js"></script>
+</html>
+
