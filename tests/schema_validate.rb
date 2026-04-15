@@ -59,8 +59,13 @@ else
 	start = true
 	count = 0
 	snon_lines = Array.new
+	example_num_string = ""
 
 	File.foreach(options[:spec]) do |line|
+		if(line.index("Example "))
+			example_num_string = line.slice(line.index(" "), line.length)
+		end
+
 		if(line.index("    ") == 0)
 			if(start == true)
 				# Beginning of code cite
@@ -81,8 +86,8 @@ else
 		else
 			if(snon_lines.count != 0)
 				# Validate SNON fragment
-				print "\n--------------------------------------\n"
-				print "Validating Example #{count}:\n"
+				print "\n------------------------------------------------------------------------------------------------\n"
+				print "Validating #{example_num_string}"
 				input_json = JSON::parse(snon_lines.join)
 				validation_result = JSON::Validator.fully_validate(schema_json, input_json)
 

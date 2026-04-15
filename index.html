@@ -94,7 +94,7 @@ SNON consists of a series of "fragments" (JSON objects) that specify the topolog
 
 Here are some examples of SNON in action:
 
-#### Example 1.4.1a - Value fragment containing a single measured value
+#### Example 1.4.1a: Value fragment containing a single measured value
 
     [
         {
@@ -106,7 +106,7 @@ Here are some examples of SNON in action:
 
 This value fragment represents a single sampled measurement taken at a given point in time.
 
-#### Example 1.4.1b - Value fragment containing multiple measured values
+#### Example 1.4.1b: Value fragment containing multiple measured values
 
     [
         {
@@ -118,7 +118,7 @@ This value fragment represents a single sampled measurement taken at a given poi
 
 This value fragment represents four sampled measurements, taken at four different points in time. This is equivalent to four single-value fragments shown in example 1.4.1a, and is typically stored as four separate values.
 
-#### Example 1.4.1c - Value fragment containing a summary of multiple measured values
+#### Example 1.4.1c: Value fragment containing a summary of multiple measured values
 
     [
         {
@@ -132,7 +132,7 @@ This value fragment represents four sampled measurements, taken at four differen
 
 This value fragment represents a time interval, and summarizes all of the samples taken within that time interval.
 
-#### Example 1.4.1d - Interoperability with SenML measurements
+#### Example 1.4.1d: Interoperability with SenML measurements
 
     [
         {
@@ -144,7 +144,7 @@ This value fragment represents a time interval, and summarizes all of the sample
 
 To integrate SenML records into the SNON model, the SenML name is used as the SNON entity ID. Note that SenML records that depend on a base name cannot be processed out of order.
 
-#### Example 1.4.2 - Series fragment representing a collection of measured values
+#### Example 1.4.2: Series fragment representing a collection of measured values
 
     [
         {
@@ -160,7 +160,7 @@ To integrate SenML records into the SNON model, the SenML name is used as the SN
 
 This series fragment represents a series named "Cooling Water Temperature" (in English) that is measured by a specific sensor (see Example 1.4.4), and has measured values for a specific quantity (see Example 1.4.3). As this fragment has the same Entity ID as the value fragments in example 1.4.1, that means that those values are associated with this series.
 
-#### Example 1.4.3 - Measurand fragment representing a quantity of measurement
+#### Example 1.4.3: Measurand fragment representing a quantity of measurement
 
     [
         {
@@ -178,7 +178,7 @@ This series fragment represents a series named "Cooling Water Temperature" (in E
 
 This measurand (a definition of the quantity to be measured) fragment represents measurements of temperature. 
 
-#### Example 1.4.4 - Sensor fragment representing a measuring instrument
+#### Example 1.4.4: Sensor fragment representing a measuring instrument
 
     [
         {
@@ -195,7 +195,7 @@ This measurand (a definition of the quantity to be measured) fragment represents
 
 This sensor fragment represents a measurement instrument that measures the temperature of the cooling water supply. 
 
-#### Example 1.4.5 - Device fragment representing a physical device
+#### Example 1.4.5: Device fragment representing a physical device
 
     [
         {
@@ -211,7 +211,7 @@ This sensor fragment represents a measurement instrument that measures the tempe
 
 This device fragment represents a physical (or logical) device that includes a collection of devices and/or sensors.
 
-#### Example 1.4.6 - Location fragment representing the a location of a device
+#### Example 1.4.6: Location fragment representing the a location of a device
 
     [
         {
@@ -291,7 +291,7 @@ SNON pack may be signed and/or encrypted using the JOSE JWE and JWS standards, a
 Figure 2 - SNON Object Model
 <br><br></center>
 
-#### Example 2.2.1 - An SNON pack with two fragments
+#### Example 2.2.1: An SNON pack with two fragments
 
     [
         {
@@ -306,7 +306,7 @@ Figure 2 - SNON Object Model
         }
     ]
 
-#### Example 2.2.2 - An encrypted SNON pack using JOSE JWE encryption
+#### Example 2.2.2: An encrypted SNON pack using JOSE JWE encryption
 
     [
         {
@@ -505,8 +505,10 @@ Measurand SNON fragments may also contain the following JSON fields:
             "eN":                   { "$ref": "#/definitions/type_intl_name" },
             "eR":                   { "$ref": "#/definitions/type_relations" },
             "meU":                  { "type": "string" },
-            "meT":                  { "type": "string" },
-            "meAq":                 { "type": "string" },
+            "meT":                  { "type": "string",
+                                      "enum": [ "enumeration", "numeric", "string", "url", "iso8601", "ordinal"] },
+            "meAq":                 { "type": "string",
+                                      "enum": [ "sample", "count", "triggered", "summary", "derived"] },
             "meUP":                 { "$ref": "#/definitions/type_intl_name" },
             "meUS":                 { "$ref": "#/definitions/type_intl_name" },
             "meUPx":                { "$ref": "#/definitions/type_intl_name" },
@@ -643,7 +645,7 @@ Figure 3 - SNON Relationship Model
 
 Relationships are expressed in relationship fragments or as the contents of the entity relationship field within a fragment. When using a entity relationship field within a fragment, the relationship source is the entity ID of the fragment the entity relationship field is contained in.
 
-#### Example 3.1.1 - Equivalent Relationships in SNON fragments
+#### Example 3.1.1: Equivalent Relationships in SNON fragments
 
     [
         {
