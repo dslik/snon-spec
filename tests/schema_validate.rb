@@ -19,7 +19,7 @@ optparse = OptionParser.new do|opts|
 	end
 
 	options[:spec] = "../index.html"
-	opts.on( '-spec', '--spec file', 'Path to specification to validate' ) do |spec|
+	opts.on( '-p', '--spec file', 'Path to specification to validate' ) do |spec|
 		options[:spec] = spec
 	end
 
