@@ -228,7 +228,7 @@ See [Section 4](#examples) for more examples.
 ### <a name="intro.related"></a>1.5 How are SNON fragments related?
 
 <center>
-![SNON Fragment Relationships](images/snon_3_fragment_relations.png)
+![SNON Fragment Relationships](images/snon_4_fragment_relations.png)
 <br>
 Figure 1 - Fragment Relationships
 <br><br></center>
@@ -236,14 +236,17 @@ Figure 1 - Fragment Relationships
 Each fragment has the following primary relationships:
 
 * Each value fragment is associated with one series fragment by entity ID
+* Each value fragment is associated with one sensor fragment by entity ID
 * Each series fragment is associated with zero or more value fragments by entity ID
 * Each series fragment is associated with zero or one measurand fragment by relation
 * Each series fragment is associated with one sensor fragment by relation
+* Each sensor fragment is associated with zero or more value fragments by entity ID
 * Each sensor fragment is associated with zero or more series fragments by relation
 * Each sensor fragment is associated with zero or one measurand fragment by relation
 * Each sensor fragment is associated with zero or more device fragment by relation
 * Each measurand fragment is associated with zero or more series fragments by relation
 * Each measurand fragment is associated with zero or more sensor fragments by relation
+* Each device fragment is associated with zero or more device fragments by relation
 * Each device fragment is associated with zero or more location fragments by relation
 * Each device fragment is associated with zero or more sensor fragments by relation
 * Each location fragment is associated with zero or more device fragments by relation
